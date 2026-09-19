@@ -1,2 +1,11 @@
 node_modules/
 build/
+deployments/*.local.json
+# ZK companion: keep the artifacts needed to prove/verify, drop the ceremony intermediates
+companions/zk-kya-groth16/build/*.ptau
+companions/zk-kya-groth16/build/kya_0000.zkey
+companions/zk-kya-groth16/build/*.sym
+companions/zk-kya-groth16/build/*.log
+companions/zk-kya-groth16/build/kya_public_v1_js/generate_witness.js
+companions/zk-kya-groth16/build/kya_public_v1_js/witness_calculator.js
+.secrets/
