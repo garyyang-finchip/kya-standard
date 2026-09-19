@@ -64,23 +64,23 @@ npm run examples:sepolia     # → deployments/sepolia-examples.json (every tx h
 
 The deployment binds to the **official ERC-8004 IdentityRegistry on Sepolia** (`0x8004A818BFB912233c491871b3d84c89A494BD9e`); the demo agent is a real ERC-8004 agent. Because the canonical ERC-8004 Validation Registry is not yet deployed on any public network, the companion deploys a spec-conforming `ValidationRegistry8004` bound to that identity registry so the KYA Bridge can be exercised end to end. The ZK example uses the shipped **test-ceremony** keys and three demo attestors derived from public seeds — reproducible by anyone, secure for no one.
 
-### Deployed addresses
+### Deployed addresses (revision 2, current)
 
-> **Revision note (2026-09-19, later the same day).** After an external design review the contracts and circuit were revised: scheme semantics made immutable, `anchor` added to assertions, `IKYAVerifier.verify` gained `anchor`, the adapter now enforces the epoch window and the attestor credential is scheme-bound (circuit revision 2), the bridge `requestHash` includes the bridge address and unmapped levels revert. **The addresses below are the revision-1 deployment and are superseded**; the revision-2 deployment will be recorded here and in `deployments/sepolia.json` once broadcast.
-
-Deployed 2026-09-19 (chainId 11155111) — **revision 1, superseded**. Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json).
+Deployed 2026-09-19 (chainId 11155111) after the external design review. Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json). The revision-1 deployment (same day, earlier) is kept in `deployments/sepolia-r1.json` / `sepolia-examples-r1.json` for the record and **must not be relied on**: its circuit lacks the scheme-bound credential and its adapter does not enforce the epoch window.
 
 | contract | address | block |
 |---|---|---|
-| KYASchemeRegistry | [`0xEe9BDEc0790Edd42fC0aB35fa6cF1966D85A4044`](https://sepolia.etherscan.io/address/0xEe9BDEc0790Edd42fC0aB35fa6cF1966D85A4044) | 11736593 |
-| KYARegistry | [`0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5`](https://sepolia.etherscan.io/address/0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5) | 11736594 |
-| KYAPolicyRegistry | [`0xeF72BF34e340DE3E2047fa8d226cF9Dc8c58eD93`](https://sepolia.etherscan.io/address/0xeF72BF34e340DE3E2047fa8d226cF9Dc8c58eD93) | 11736595 |
-| ValidationRegistry8004 | [`0x281e9B657d89b0729e51B9031787A00870cAa9aa`](https://sepolia.etherscan.io/address/0x281e9B657d89b0729e51B9031787A00870cAa9aa) | 11736596 |
-| KYABridge8004 | [`0x44C1E906CEE7A3b336Ca23E58F0fae7d3AFbCe1A`](https://sepolia.etherscan.io/address/0x44C1E906CEE7A3b336Ca23E58F0fae7d3AFbCe1A) | 11736597 |
-| Groth16Verifier | [`0xF8a260a0b9443B03E8435ac21f22075976110f8C`](https://sepolia.etherscan.io/address/0xF8a260a0b9443B03E8435ac21f22075976110f8C) | 11736598 |
-| Groth16KYAVerifierAdapter | [`0x540B7651FA94Cd586599Deb478893D800bc3C2d8`](https://sepolia.etherscan.io/address/0x540B7651FA94Cd586599Deb478893D800bc3C2d8) | 11736599 |
+| KYASchemeRegistry | [`0xAc7B642a5760467178F20c984f02cc72CCCa8E3f`](https://sepolia.etherscan.io/address/0xAc7B642a5760467178F20c984f02cc72CCCa8E3f) | 11737350 |
+| KYARegistry | [`0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f`](https://sepolia.etherscan.io/address/0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f) | 11737350 |
+| KYAPolicyRegistry | [`0x9B53BAD4346AacB34Bac328F1d856dfa2F246cfF`](https://sepolia.etherscan.io/address/0x9B53BAD4346AacB34Bac328F1d856dfa2F246cfF) | 11737350 |
+| ValidationRegistry8004 | [`0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53`](https://sepolia.etherscan.io/address/0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53) | 11737351 |
+| KYABridge8004 | [`0xCcd683927d1fC03A0163B3e9FbE7fC44afFbA5e4`](https://sepolia.etherscan.io/address/0xCcd683927d1fC03A0163B3e9FbE7fC44afFbA5e4) | 11737354 |
+| Groth16Verifier (circuit rev 2) | [`0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9`](https://sepolia.etherscan.io/address/0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9) | 11737354 |
+| Groth16KYAVerifierAdapter (epoch 30 d, grace 1, pinned root) | [`0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD`](https://sepolia.etherscan.io/address/0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD) | 11737354 |
 
-Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387** ([register tx](https://sepolia.etherscan.io/tx/0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de)). Schemes: attested `0xc3d44c830a5c118f980f48317b97e9eaa920a7bbd204c7d3595ac191d4726764`, proved (ZK) `0xb7285a191e9264579d633cf4b2ddd435eeb56c93cf5d08d01afc13134cf376ad`. Worked examples: [attest](https://sepolia.etherscan.io/tx/0x9199573fa67a028ce4d2dd767d014e42d8644c0f4056116689a7e31f56b2d452) · [attestWithProof (Groth16)](https://sepolia.etherscan.io/tx/0x7df3c4ad5d651594800d335cc0f04f872d35ced95ec994d39b60ba9570c88c1d) · [policy](https://sepolia.etherscan.io/tx/0xfc3058f2614bc9d4580245f652c14c774336dbc274a65fdce8671e7065a9f25a) · bridge [request](https://sepolia.etherscan.io/tx/0xbf990cb45aeed07b3fd7dd12171d6147824b9b95c9ce2b6bc22da7e4d5d30e3d) → [sync](https://sepolia.etherscan.io/tx/0xdab38a990047a7e3bb1a11a76a3fcc4322861ceb9e4dd59fecc3372fc9fd4a81) (mirrored 60/100 under tag `kya:c3d44c83`).
+Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387** ([register tx](https://sepolia.etherscan.io/tx/0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de)). Schemes: attested `0x3673f050219a78ab695de14ae60319a2934bb220d57eb9dbeba2a2ed77bc3681` (binding `controller`, ordered-level), proved (ZK) `0xe4e030f4af9d9bfdd50e0517985dfc4689572f94c02b6bce4def064fcc9e5626`. Worked examples: [setMetadata "kya"](https://sepolia.etherscan.io/tx/0xf7c1985b57d54a041e4f1f05ff6520a571833772d86831acf073fdda01da656f) · [attest](https://sepolia.etherscan.io/tx/0x44fb70fefec69e6e114226226fbad4da51ccc49152124f3a8d794bd04a5133ac) · [attestWithProof (Groth16, epoch 690, anchor = issuer-set root)](https://sepolia.etherscan.io/tx/0x9d52d732321a29c0a8c463530bb23fdad92bc7eef83ea8cf2f96e5f51454ef0c) · [policy](https://sepolia.etherscan.io/tx/0xb9f635979ddcd43baed010955448d9f3533e56c94401cc27e13940f508dfb901) · bridge [configure](https://sepolia.etherscan.io/tx/0x19b76d05ec8b6ff28275008f37aa727b8ee71e346c6d4267bd75db4aefa1ec20) → [request](https://sepolia.etherscan.io/tx/0xc7de5adff03fed1a4ca6c38f575074c307437ad991911318406c125bba9b5b1f) → [sync](https://sepolia.etherscan.io/tx/0xc47db8f5b007ecb194d1348f3317fd472d08e701592ab8a0c3d0c601a946e6d7) (mirrored 60/100 under tag `kya:3673f050`).
+
+Ownership: bridge owner and both scheme controllers are still the deployer key until the maintainer supplies an address; the transfer transactions will be recorded in `deployments/ownership.json`.
 
 ## Key derivations
 
