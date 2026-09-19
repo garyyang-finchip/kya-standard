@@ -2,6 +2,8 @@
 
 **Status: EXPERIMENTAL companion. Not part of the ERC text.** It exists to show that the ZK-KYA profile in the ERC is implementable end to end with a real proof system, and to give scheme authors a starting point. The trusted setup shipped here is a **single-party test ceremony**; do not use these keys in production.
 
+> This circuit is the **credential pattern** of ZK-KYA (ERC §5.1): a hidden attestor signed a verdict in advance. The **predicate pattern** — the scheme is the decision rule and the prover evaluates it over its own authenticated data (storage proofs, zkTLS, or source-signed inputs) — uses the same `IKYAVerifier` boundary but a different circuit; it is **not** demonstrated by this companion. A minimal example is planned.
+
 ## What the circuit proves
 
 > "An attestor whose EdDSA key is a member of the issuer set committed to by `issuerSetRoot` signed
