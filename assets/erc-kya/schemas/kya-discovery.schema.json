@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://eips.ethereum.org/assets/erc-9999/schemas/kya-discovery.schema.json",
+  "$id": "https://eips.ethereum.org/assets/eip-9999/schemas/kya-discovery.schema.json",
   "title": "KYA Discovery Document v1",
   "description": "Served at https://{domain}/.well-known/kya.json and/or referenced from an ERC-8004 registration file `services` entry named \"KYA\".",
   "type": "object",

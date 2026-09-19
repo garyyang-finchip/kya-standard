@@ -15,8 +15,8 @@
   "circuit": {
     "system": "groth16",
     "vkHash": "0x9f1c7e2d5b3a4c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6",
-    "publicInputLayout": ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot"],
-    "publicInputAbi": ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32"],
+    "publicInputLayout": ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot", "epoch"],
+    "publicInputAbi": ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"],
     "nullifierScope": "scheme-epoch",
     "epochSeconds": 2592000,
     "issuerHiding": true

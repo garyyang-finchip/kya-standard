@@ -3,7 +3,7 @@ eip: 9999
 title: Know-Your-Agent (KYA) Framework
 description: Scheme-agnostic registries and handshake for trust assertions about AI agents, with a zero-knowledge profile and agent-registry binding
 author: Gary Yang (@garyyang-finchip)
-discussions-to: https://ethereum-magicians.org/t/TBD
+discussions-to: https://ethereum-magicians.org/t/draft-erc-know-your-agent-kya-framework-trust-assertions-for-agents-zk-kya-profile-erc-8004-binding/29735
 status: Draft
 type: Standards Track
 category: ERC
@@ -120,7 +120,7 @@ Rules:
 
 #### 3.1 Scheme Descriptor
 
-`schemeURI` MUST resolve to a JSON document conforming to the schema in [`kya-scheme.schema.json`](../assets/erc-9999/schemas/kya-scheme.schema.json). Required members are `type`, `name`, `description`, `version`, `mode`, `dimensions` and `levels`; `circuit` is additionally REQUIRED when `mode` is `"proved"`.
+`schemeURI` MUST resolve to a JSON document conforming to the schema in [`kya-scheme.schema.json`](../assets/eip-9999/schemas/kya-scheme.schema.json). Required members are `type`, `name`, `description`, `version`, `mode`, `dimensions` and `levels`; `circuit` is additionally REQUIRED when `mode` is `"proved"`.
 
 ```json
 {
@@ -140,8 +140,8 @@ Rules:
   "circuit": {
     "system": "groth16",
     "vkHash": "0x9f1c7e2d5b3a4c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6",
-    "publicInputLayout": ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot"],
-    "publicInputAbi": ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32"],
+    "publicInputLayout": ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot", "epoch"],
+    "publicInputAbi": ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"],
     "nullifierScope": "scheme-epoch",
     "epochSeconds": 2592000,
     "issuerHiding": true
@@ -150,7 +150,7 @@ Rules:
 ```
 
 - `levels` MUST contain key `"0"`, whose meaning is "not verified / failed". Each level MAY carry `erc8004Response` (0–100), the value a KYA Bridge (Section 8) SHOULD mirror for that level.
-- `dimensions` and `evidenceKinds` are open vocabularies; Appendix A registers initial values.
+- `dimensions` and `evidenceKinds` are open vocabularies; Section 11 registers initial values.
 - `issuerPolicy` is declarative. The framework does not enforce who may issue; relying parties enforce it by choosing `issuers` (Section 4).
 - The framework does not interpret `dimensions`, `evidenceKinds`, `issuerPolicy` or `circuit` beyond requiring their presence and shape. **This is where KYA principles and ZK-KYA algorithms live; this ERC standardises the container, not the contents.**
 
@@ -243,7 +243,7 @@ Binding requirements on any circuit used under this profile. These are normative
 - **Issuer hiding (OPTIONAL).** A circuit MAY prove membership of the underlying attestor in an issuer set committed to by `issuerSetRoot`. The on-chain `issuer` is then the verifier address and the real attestor is not disclosed. Verifiers MAY pin a required `issuerSetRoot`.
 - **Selective disclosure.** `claimDigest` MUST be the only claim-bearing output; the scheme descriptor defines what it commits to.
 
-**Canonical layout `kya-public-v1`.** `publicInputs = abi.encode(bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt, bytes32 issuerSetRoot)`. Adapters for field-arithmetic proving systems SHOULD split each 256-bit value into `(hi128, lo128)` field elements rather than truncating; the reference Groth16 adapter does so, producing ten signals.
+**Canonical layout `kya-public-v1`.** `publicInputs = abi.encode(bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt, bytes32 issuerSetRoot, uint64 epoch)`, where `epoch` is `0` for schemes whose `nullifierScope` is `scheme`. Adapters for field-arithmetic proving systems SHOULD split each 256-bit value into `(hi128, lo128)` field elements rather than truncating, and SHOULD feed the `schemeId` they were called with into the circuit as public signals so that a proof is domain-separated per scheme without trusting the prover to supply it; the reference Groth16 adapter does both, producing thirteen signals.
 
 **Ephemeral presentation.** A proved assertion MAY be presented in a handshake (Section 6) without ever being recorded on-chain. The relying party then calls `verifier.verify` via `staticcall`, applies rules 3 and 5 itself, and tracks nullifiers locally if it needs replay protection across sessions. Recorded and ephemeral proved assertions are semantically identical; only persistence differs.
 
@@ -265,7 +265,7 @@ KYAPresentation(bytes32 challengeHash,bytes32[] assertionIds,bytes32 proofScheme
 - Mutual KYA is two independent challenge/presentation exchanges.
 - Transport bindings (HTTP POST, A2A message extension, MCP initialisation metadata) are informative here and MAY be specified by companion documents.
 
-**Discovery.** An agent MAY publish `https://{domain}/.well-known/kya.json` conforming to [`kya-discovery.schema.json`](../assets/erc-9999/schemas/kya-discovery.schema.json):
+**Discovery.** An agent MAY publish `https://{domain}/.well-known/kya.json` conforming to [`kya-discovery.schema.json`](../assets/eip-9999/schemas/kya-discovery.schema.json):
 
 ```json
 {
@@ -294,7 +294,7 @@ interface IKYAPolicyRegistry /* is IERC165 */ {
 ```
 
 - `policyId` MUST equal `keccak256(abi.encode(msg.sender, policyHash, nonce))` with a per-owner counter.
-- `policyURI` MUST resolve to a document conforming to [`kya-policy.schema.json`](../assets/erc-9999/schemas/kya-policy.schema.json): a tree of `allOf` / `anyOf` nodes over rules `{schemeId, minLevel, issuers[]}`; `issuers` MUST be non-empty in every rule.
+- `policyURI` MUST resolve to a document conforming to [`kya-policy.schema.json`](../assets/eip-9999/schemas/kya-policy.schema.json): a tree of `allOf` / `anyOf` nodes over rules `{schemeId, minLevel, issuers[]}`; `issuers` MUST be non-empty in every rule.
 - On-chain evaluation is OPTIONAL. An implementation that offers it MUST evaluate the stored `allOf` rules as a conjunction of `IKYARegistry.check` calls and MUST revert if no rules are stored for the policy.
 
 ### 8. ERC-8004 Binding Profile
@@ -323,6 +323,25 @@ Implementations SHOULD use these custom errors: `KYA_SchemeNotFound(bytes32)`, `
 | `IKYAPolicyRegistry` | `0xb7f738f1` |
 | `IKYAVerifier` | `0x5bf48e3a` |
 
+### 11. Initial vocabulary (informative)
+
+`dimensions`: `controller-binding`, `provenance`, `capability`, `accountability`, `behavioral`, `compliance`, `runtime-integrity`.
+
+`evidenceKinds`: `erc8004-reputation`, `erc8004-validation`, `vc-jwt`, `vc-ld`, `tee-quote`, `zk-proof`, `domain-proof`, `payment-history`.
+
+### 12. Common level ladder (informative)
+
+| level | label | meaning |
+|---|---|---|
+| 0 | unknown / failed | no conclusion, or explicit fail |
+| 1 | self-asserted | the subject's own claims, unverified |
+| 2 | controller-linked | control of keys and endpoints demonstrated |
+| 3 | provenance-verified | origin, code or model lineage verified by a third party |
+| 4 | accountable | an identified legal or economic party stands behind the agent |
+| 5 | continuously monitored | ongoing runtime or behavioural attestation in force |
+
+Schemes are free to define their own ladders; this table is a shared reference so that descriptor authors converge and relying parties can read unfamiliar schemes quickly.
+
 ## Rationale
 
 **A framework, not an algorithm.** ERC-8004 refused to standardise reputation math and thereby stayed useful to every reputation system. This ERC makes the same refusal one layer up: it standardises how a conclusion is *addressed, versioned, admitted, resolved and presented*, and leaves what the conclusion *means* to the scheme descriptor. Any attempt to fix a KYA rule set on-chain would be obsolete before it was finalised; a container for rule sets is not.
@@ -333,7 +352,7 @@ Implementations SHOULD use these custom errors: `KYA_SchemeNotFound(bytes32)`, `
 
 **Verifier as adapter.** Putting the proving system behind `IKYAVerifier` and fixing only the *public-input layout* is what makes the profile future-proof. The registry never learns whether a proof was Groth16, a STARK or a TEE quote; it learns six fields. New systems require a new adapter contract, not a new ERC.
 
-**`level` as `uint8` with scheme-scoped semantics.** A single numeric axis gives contracts a cheap comparison (`level >= minLevel`) while leaving meaning to the descriptor. Appendix B offers a common ladder so descriptor authors converge, but comparing levels across schemes without reading descriptors is unsafe and the specification says so.
+**`level` as `uint8` with scheme-scoped semantics.** A single numeric axis gives contracts a cheap comparison (`level >= minLevel`) while leaving meaning to the descriptor. Section 12 offers a common ladder so descriptor authors converge, but comparing levels across schemes without reading descriptors is unsafe and the specification says so.
 
 **Two registries, co-deployable.** Schemes and assertions have different governance: schemes are curated by controllers and rarely change; assertions are written constantly by many issuers. Separate interfaces let them be upgraded or governed independently; nothing prevents one contract from implementing both, mirroring ERC-8004's three-registry design.
 
@@ -349,21 +368,20 @@ No changes to ERC-8004 contracts are required. All ERC-8004 interactions use the
 
 ## Test Cases
 
-Deterministic vectors are provided in [`vectors.json`](../assets/erc-9999/vectors/vectors.json) and regenerated by `tools/vectors.js`. They cover: `subjectType` hashes; `subjectKey` for an `erc8004` subject; `schemeId`, `assertionId` and `policyId` derivations; the canonical `kya-public-v1` public-input encoding, its `evidenceHash`, and its ten-signal Groth16 split; the bridge `requestHash`, `tag` and metadata value; EIP-712 digests for `KYAChallenge`, an assertion-based `KYAPresentation` and an ephemeral ZK `KYAPresentation`, with a signature from a well-known test key; and the four ERC-165 interface ids.
+Deterministic vectors are provided in [`vectors.json`](../assets/eip-9999/vectors/vectors.json) and regenerated by `tools/vectors.js`. They cover: `subjectType` hashes; `subjectKey` for an `erc8004` subject; `schemeId`, `assertionId` and `policyId` derivations; the canonical `kya-public-v1` public-input encoding, its `evidenceHash`, and its thirteen-signal Groth16 split; the bridge `requestHash`, `tag` and metadata value; EIP-712 digests for `KYAChallenge`, an assertion-based `KYAPresentation` and an ephemeral ZK `KYAPresentation`, with a signature from a well-known test key; and the four ERC-165 interface ids.
 
 An executable end-to-end suite (`test/kya.test.js`) exercises the reference implementation on an in-process EVM: scheme lifecycle and access control; attested recording, supersession, revocation and expiry; resolution ordering and the non-empty-issuers rule; proved admission with subject-mismatch, replay and mode-mismatch rejections; the Groth16 adapter including `issuerSetRoot` pinning; on-chain policy evaluation; and the full ERC-8004 bridge flow from `validationRequest` through `sync`, revocation and re-sync.
 
 ## Reference Implementation
 
-See [`assets/eip-9999/contracts`](../assets/erc-9999/contracts/):
+A reference implementation is provided under the assets of this proposal:
 
-- `interfaces/` — `IKYATypes`, `IKYASchemeRegistry`, `IKYARegistry`, `IKYAPolicyRegistry`, `IKYAVerifier`, a minimal `IERC8004Validation`.
-- `KYASchemeRegistry.sol`, `KYARegistry.sol`, `KYAPolicyRegistry.sol` — permissionless registries.
-- `KYABridge8004.sol` — curated ERC-8004 validator mirroring KYA outcomes.
-- `verifiers/Groth16KYAVerifierAdapter.sol` — adapter from a snarkjs-style Groth16 verifier to `IKYAVerifier` using the `kya-public-v1` layout.
-- `mocks/` — test-only ERC-8004 identity/validation registries and verifiers.
+- Interfaces: [`IKYATypes.sol`](../assets/eip-9999/contracts/interfaces/IKYATypes.sol), [`IKYASchemeRegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYASchemeRegistry.sol), [`IKYARegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYARegistry.sol), [`IKYAPolicyRegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYAPolicyRegistry.sol), [`IKYAVerifier.sol`](../assets/eip-9999/contracts/interfaces/IKYAVerifier.sol), and a minimal [`IERC8004Validation.sol`](../assets/eip-9999/contracts/interfaces/IERC8004Validation.sol).
+- Registries: [`KYASchemeRegistry.sol`](../assets/eip-9999/contracts/KYASchemeRegistry.sol), [`KYARegistry.sol`](../assets/eip-9999/contracts/KYARegistry.sol), [`KYAPolicyRegistry.sol`](../assets/eip-9999/contracts/KYAPolicyRegistry.sol) — permissionless.
+- Bridge: [`KYABridge8004.sol`](../assets/eip-9999/contracts/KYABridge8004.sol) — curated ERC-8004 validator mirroring KYA outcomes.
+- Verifier adapter: [`Groth16KYAVerifierAdapter.sol`](../assets/eip-9999/contracts/verifiers/Groth16KYAVerifierAdapter.sol) — adapts a snarkjs-style Groth16 verifier to `IKYAVerifier` using the `kya-public-v1` layout.
 
-Schemas for the scheme, policy and discovery documents are in [`assets/eip-9999/schemas`](../assets/erc-9999/schemas/).
+Schemas for the scheme, policy and discovery documents: [`kya-scheme.schema.json`](../assets/eip-9999/schemas/kya-scheme.schema.json), [`kya-policy.schema.json`](../assets/eip-9999/schemas/kya-policy.schema.json), [`kya-discovery.schema.json`](../assets/eip-9999/schemas/kya-discovery.schema.json).
 
 ## Security Considerations
 
@@ -388,25 +406,6 @@ Schemas for the scheme, policy and discovery documents are in [`assets/eip-9999/
 **Bridge honesty.** A bridge is only as trustworthy as its operator's issuer configuration; a malicious bridge can mirror arbitrary responses. ERC-8004 clients SHOULD verify `bridge.kyaRegistry()` and `getSchemeConfig(schemeId)` before trusting the `kya:` tag, exactly as they would vet any other validator address.
 
 **Gas and denial of service.** `resolve` is linear in `issuers.length`; policies SHOULD keep issuer lists short. Scheme and policy registration are permissionless and cheap, so ids are namespaced by controller and cannot collide or be squatted.
-
-## Appendix A — Initial vocabulary (informative)
-
-`dimensions`: `controller-binding`, `provenance`, `capability`, `accountability`, `behavioral`, `compliance`, `runtime-integrity`.
-
-`evidenceKinds`: `erc8004-reputation`, `erc8004-validation`, `vc-jwt`, `vc-ld`, `tee-quote`, `zk-proof`, `domain-proof`, `payment-history`.
-
-## Appendix B — Common level ladder (informative)
-
-| level | label | meaning |
-|---|---|---|
-| 0 | unknown / failed | no conclusion, or explicit fail |
-| 1 | self-asserted | the subject's own claims, unverified |
-| 2 | controller-linked | control of keys and endpoints demonstrated |
-| 3 | provenance-verified | origin, code or model lineage verified by a third party |
-| 4 | accountable | an identified legal or economic party stands behind the agent |
-| 5 | continuously monitored | ongoing runtime or behavioural attestation in force |
-
-Schemes are free to define their own ladders; this table is a shared reference so that descriptor authors converge and relying parties can read unfamiliar schemes quickly.
 
 ## Copyright
 

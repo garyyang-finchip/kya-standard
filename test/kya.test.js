@@ -27,7 +27,7 @@ async function test(name, fn) {
   const kya = await h.deploy("KYARegistry", [schemes.addr]);
   const policies = await h.deploy("KYAPolicyRegistry", [kya.addr]);
   const identity = await h.deploy("MockIdentityRegistry");
-  const validation = await h.deploy("MockValidationRegistry", [identity.addr]);
+  const validation = await h.deploy("ValidationRegistry8004", [identity.addr]);
   const bridge = await h.deploy("KYABridge8004", [kya.addr, validation.addr, A("deployer")]);
   const ids = await h.deploy("InterfaceIds");
   const secret = ethers.id("mock-secret");
@@ -184,19 +184,19 @@ async function test(name, fn) {
     await expectRevert(kya.send("attestWithProof", [subj(), attestedScheme, pi, proofFor(pi), ""], "relayer"), "KYA_ModeMismatch");
   });
 
-  await test("Groth16 adapter: 256-bit values split into (hi, lo) signals; issuerSetRoot pinning", async () => {
-    const g16 = await h.deploy("MockGroth16Verifier10");
+  await test("Groth16 adapter: 13-signal kya-public-v1 layout (schemeId + epoch bound); issuerSetRoot pinning", async () => {
+    const g16 = await h.deploy("MockGroth16Verifier13");
     const root = ethers.id("issuer-set");
     const adapter = await h.deploy("Groth16KYAVerifierAdapter", [g16.addr, root]);
     const sk = subjectKey(subj());
-    const pi = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32"], [sk, ethers.id("g1"), 3, ethers.id("c"), 0, root]);
+    const pi = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], [sk, ethers.id("g1"), 3, ethers.id("c"), 0, root, 0]);
     const okProof = coder.encode(["uint256[2]", "uint256[2][2]", "uint256[2]"], [[1, 0], [[0, 0], [0, 0]], [0, 0]]);
     const badProof = coder.encode(["uint256[2]", "uint256[2][2]", "uint256[2]"], [[0, 0], [[0, 0], [0, 0]], [0, 0]]);
     let r = await adapter.call("verify", [ethers.ZeroHash, pi, okProof]);
     assert.equal(r.ok, true); assert.equal(r.subjectKey, sk); assert.equal(Number(r.level), 3);
     r = await adapter.call("verify", [ethers.ZeroHash, pi, badProof]);
     assert.equal(r.ok, false);
-    const wrongRoot = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32"], [sk, ethers.id("g1"), 3, ethers.id("c"), 0, ethers.id("other")]);
+    const wrongRoot = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], [sk, ethers.id("g1"), 3, ethers.id("c"), 0, ethers.id("other"), 0]);
     r = await adapter.call("verify", [ethers.ZeroHash, wrongRoot, okProof]);
     assert.equal(r.ok, false);
     // plug the adapter into a real PROVED scheme and record
@@ -235,7 +235,7 @@ async function test(name, fn) {
     await expectRevert(bridge.send("sync", [agentId, attestedScheme], "stranger"), "RequestNotFound");
     // agent owner files the ERC-8004 validation request pointing at the bridge
     await validation.send("validationRequest", [bridge.addr, agentId, "ipfs://kya-request.json", rh], "agentOwner");
-    await expectRevert(validation.send("validationRequest", [bridge.addr, agentId, "x", ethers.id("other")], "stranger"), "not owner/operator");
+    await expectRevert(validation.send("validationRequest", [bridge.addr, agentId, "x", ethers.id("other")], "stranger"), "Not authorized");
 
     let { result: resp } = await bridge.send("sync", [agentId, attestedScheme], "stranger");
     assert.equal(Number(resp), 60); // level 2 → 60

@@ -19,6 +19,9 @@ const sources = {};
 for (const f of walk(SRC)) {
   sources[path.relative(SRC, f)] = { content: fs.readFileSync(f, "utf8") };
 }
+// ZK companion: include the snarkjs-generated Groth16 verifier when it has been built
+const G16 = path.join(ROOT, "companions/zk-kya-groth16/build/Groth16Verifier.sol");
+if (fs.existsSync(G16)) sources["companions/Groth16Verifier.sol"] = { content: fs.readFileSync(G16, "utf8") };
 
 const input = {
   language: "Solidity",

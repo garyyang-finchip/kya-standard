@@ -5,7 +5,12 @@
   "scripts": {
     "compile": "node tools/compile.js",
     "test": "node tools/compile.js && node test/kya.test.js",
-    "vectors": "node tools/vectors.js"
+    "vectors": "node tools/vectors.js",
+    "zk:compile": "circom companions/zk-kya-groth16/circuits/kya_public_v1.circom --r1cs --wasm --sym -o companions/zk-kya-groth16/build",
+    "zk:setup": "bash companions/zk-kya-groth16/setup.sh",
+    "test:zk": "node tools/compile.js && node test/zk.test.js",
+    "deploy:sepolia": "node tools/compile.js && node scripts/deploy-sepolia.js",
+    "examples:sepolia": "node scripts/examples-sepolia.js"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +24,10 @@
     "@ethereumjs/vm": "^8.1.1",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
     "ethers": "^6.17.0",
+    "snarkjs": "^0.7.6",
     "solc": "^0.8.28"
   },
   "private": true

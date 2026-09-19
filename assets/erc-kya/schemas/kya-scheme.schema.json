@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://eips.ethereum.org/assets/erc-9999/schemas/kya-scheme.schema.json",
+  "$id": "https://eips.ethereum.org/assets/eip-9999/schemas/kya-scheme.schema.json",
   "title": "KYA Scheme Descriptor v1",
   "description": "Off-chain descriptor referenced by IKYASchemeRegistry.Scheme.schemeURI. Holds the KYA principle; the chain holds only its address, hash, mode and verifier.",
   "type": "object",
@@ -57,9 +57,9 @@
         "publicInputLayout": {
           "type": "array", "minItems": 1,
           "items": { "type": "string" },
-          "description": "Ordered names of ABI-encoded public inputs. MUST include subjectKey and nullifier. Canonical layout 'kya-public-v1': [subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot]."
+          "description": "Ordered names of ABI-encoded public inputs. MUST include subjectKey and nullifier. Canonical layout 'kya-public-v1': [subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch]."
         },
-        "publicInputAbi": { "type": "array", "items": { "type": "string" }, "description": "Solidity ABI types matching publicInputLayout, e.g. [\"bytes32\",\"bytes32\",\"uint8\",\"bytes32\",\"uint64\",\"bytes32\"]." },
+        "publicInputAbi": { "type": "array", "items": { "type": "string" }, "description": "Solidity ABI types matching publicInputLayout, e.g. [\"bytes32\",\"bytes32\",\"uint8\",\"bytes32\",\"uint64\",\"bytes32\",\"uint64\"]." },
         "nullifierScope": { "type": "string", "enum": ["scheme", "scheme-epoch"], "default": "scheme" },
         "epochSeconds": { "type": "integer", "minimum": 1 },
         "issuerHiding": { "type": "boolean", "default": false }

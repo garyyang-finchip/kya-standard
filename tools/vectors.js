@@ -43,9 +43,10 @@ const nullifier = ethers.keccak256(coder.encode(["bytes32", "bytes32", "uint64"]
 const claimDigest = ethers.id("claims:jurisdiction=SG;capital>=1e6");
 const issuerSetRoot = ethers.id("issuer-set-root");
 const expiresAt = 1_900_000_000n;
-const publicInputs = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32"], [subjectKey, nullifier, 4, claimDigest, expiresAt, issuerSetRoot]);
+const epoch = 0n;
+const publicInputs = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], [subjectKey, nullifier, 4, claimDigest, expiresAt, issuerSetRoot, epoch]);
 const split = (v) => [(BigInt(v) >> 128n).toString(), (BigInt(v) & ((1n << 128n) - 1n)).toString()];
-const groth16Signals = [...split(subjectKey), ...split(nullifier), "4", ...split(claimDigest), expiresAt.toString(), ...split(issuerSetRoot)];
+const groth16Signals = [...split(nullifier), ...split(subjectKey), "4", ...split(claimDigest), expiresAt.toString(), ...split(issuerSetRoot), ...split(schemeId), epoch.toString()];
 
 // ---- policy -------------------------------------------------------------------
 const policyDescriptor = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../assets/erc-kya/vectors/example-policy.json"), "utf8"));
@@ -108,7 +109,7 @@ const vectors = {
   subject: { chainId: chainId.toString(), identityRegistry, agentId: agentId.toString(), subjectType: SUBJECT_TYPES.erc8004, subjectData, subjectKey },
   scheme: { controller, schemeHash, nonce: schemeNonce.toString(), schemeId, descriptorKeccak: "keccak256 of the raw bytes of example-scheme.json" },
   assertion: { issuer, issuerNonce: issuerNonce.toString(), assertionId, provedIssuer: verifier, provedAssertionId },
-  zk: { layout: "kya-public-v1", proverSecret: proverKey, epoch: "0", nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },
+  zk: { layout: "kya-public-v1", signalOrder: "[nullifier.hi, nullifier.lo, subjectKey.hi, subjectKey.lo, level, claimDigest.hi, claimDigest.lo, expiresAt, issuerSetRoot.hi, issuerSetRoot.lo, schemeId.hi, schemeId.lo, epoch]", proverSecret: proverKey, epoch: epoch.toString(), nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },
   policy: { owner: policyOwner, policyHash, nonce: "0", policyId },
   bridge8004: { requestType: ethers.id("erc-kya-request-v1"), requestHash, tag, metadataKey: "kya", metadataValue },
   eip712: { domain, types, challenge, challengeHash, presentation, presentationHash, zkPresentation, zkPresentationHash, signer: wallet.address, presentationSignature },

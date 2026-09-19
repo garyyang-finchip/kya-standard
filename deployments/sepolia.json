@@ -1,0 +1,75 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+  "deployedAt": "2026-09-19",
+  "note": "Deployed from a sandbox-held throwaway key; transactions signed offline and broadcast via JSON-RPC. Bridge ownership / scheme control transferred to the maintainer afterwards (see ownership.txs).",
+  "erc8004": {
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "validationRegistry": "not deployed by ERC-8004 authors yet — companion ValidationRegistry8004 used"
+  },
+  "contracts": {
+    "KYASchemeRegistry": {
+      "address": "0xEe9BDEc0790Edd42fC0aB35fa6cF1966D85A4044",
+      "tx": "0x262cdb26d63808cb5e77e97fb71e00529e134ee8451122c93fdccda9594b833b",
+      "block": 11736593
+    },
+    "KYARegistry": {
+      "address": "0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5",
+      "tx": "0x041b2f049707b4c126e2c4241c1ab45f3dd49b4b0597ae5694d5e00a51ab89d4",
+      "block": 11736594,
+      "args": [
+        "0xEe9BDEc0790Edd42fC0aB35fa6cF1966D85A4044"
+      ]
+    },
+    "KYAPolicyRegistry": {
+      "address": "0xeF72BF34e340DE3E2047fa8d226cF9Dc8c58eD93",
+      "tx": "0xe9bedaf8585be06be3817a942fb890c0eb211dfcd13c18267d9fefdfb02fd364",
+      "block": 11736595,
+      "args": [
+        "0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5"
+      ]
+    },
+    "ValidationRegistry8004": {
+      "address": "0x281e9B657d89b0729e51B9031787A00870cAa9aa",
+      "tx": "0xdaa1815be71575cbfb5d4cd50197665005b84d1ccfab9d60eb4c91fd9da0cee0",
+      "block": 11736596,
+      "args": [
+        "0x8004A818BFB912233c491871b3d84c89A494BD9e"
+      ]
+    },
+    "KYABridge8004": {
+      "address": "0x44C1E906CEE7A3b336Ca23E58F0fae7d3AFbCe1A",
+      "tx": "0x99d6bc14fdf85bea0245482030ad7faf7cbead6419622bf512c3f3f0a84447f3",
+      "block": 11736597,
+      "args": [
+        "0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5",
+        "0x281e9B657d89b0729e51B9031787A00870cAa9aa",
+        "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+      ]
+    },
+    "Groth16Verifier": {
+      "address": "0xF8a260a0b9443B03E8435ac21f22075976110f8C",
+      "tx": "0x875ae88f737c1903c4858b0adb0c61a21eb1c931054bf5d53f09e86e8ec38b44",
+      "block": 11736598
+    },
+    "Groth16KYAVerifierAdapter": {
+      "address": "0x540B7651FA94Cd586599Deb478893D800bc3C2d8",
+      "tx": "0x010836ab173965012478f9e896e0b78922e1131437085e0be149978167f3e7e6",
+      "block": 11736599,
+      "args": [
+        "0xF8a260a0b9443B03E8435ac21f22075976110f8C",
+        "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+      ]
+    }
+  },
+  "demoIssuerSet": {
+    "seeds": [
+      "kya-demo-issuer-alice",
+      "kya-demo-issuer-bob",
+      "kya-demo-issuer-carol"
+    ],
+    "root": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+  }
+}

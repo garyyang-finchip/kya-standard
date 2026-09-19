@@ -1,0 +1,119 @@
+{
+  "network": "sepolia",
+  "runAt": "2026-09-19",
+  "agent": {
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "agentId": "10387",
+    "registerTx": "0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de",
+    "block": 11736632,
+    "subjectKey": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0"
+  },
+  "schemes": {
+    "attested": {
+      "schemeId": "0xc3d44c830a5c118f980f48317b97e9eaa920a7bbd204c7d3595ac191d4726764",
+      "tx": "0xf6c51cf4e99415986166c727995e11071a1b2c915d9d2dccd97e611eefb42b57",
+      "descriptorHash": "0x23e661b58a9752934a032566bb814b2e90b36973af0d738185ec43ea0b8ddb8b"
+    },
+    "proved": {
+      "schemeId": "0xb7285a191e9264579d633cf4b2ddd435eeb56c93cf5d08d01afc13134cf376ad",
+      "tx": "0xce712f0fc96bb6df46b35cfca256154cddc0c9881ceb883a2278aed64b247c78",
+      "descriptorHash": "0xef83df80cf3ff3b04b71d8190703b69bba1f65c30ea34cefe71b9e36205f8783",
+      "verifier": "0x540B7651FA94Cd586599Deb478893D800bc3C2d8"
+    }
+  },
+  "steps": {
+    "setMetadataKya": {
+      "tx": "0x5532e0bc404001a787d5c9073df14359e477b40f2f7cd6f6ce7c5c9104edd3b7"
+    },
+    "attest": {
+      "tx": "0x9199573fa67a028ce4d2dd767d014e42d8644c0f4056116689a7e31f56b2d452",
+      "assertionId": "0xd4701c9b8d0d35a9293250119d9c1ce3fa9cc57c57d0b0abcc00802ffc52f290",
+      "level": 2,
+      "issuer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+      "expiresAt": 1797583971,
+      "verified": {
+        "resolve": 2,
+        "check_min2": true
+      }
+    },
+    "attestWithProof": {
+      "tx": "0x7df3c4ad5d651594800d335cc0f04f872d35ced95ec994d39b60ba9570c88c1d",
+      "assertionId": "0x5596ab7102b895634af635c4fcf315942ed174a042b434aaeb07071c8c0a8843",
+      "level": 4,
+      "issuer": "0x540B7651FA94Cd586599Deb478893D800bc3C2d8",
+      "nullifier": "0x180f83319086daded363f84d7fb6a9259dd1f55c6f61630a021e9dcaf5c47c3d",
+      "publicInputs": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0180f83319086daded363f84d7fb6a9259dd1f55c6f61630a021e9dcaf5c47c3d0000000000000000000000000000000000000000000000000000000000000004a60eda95a8f3721d347b926dae30576e0d6cbd8b08010db4c12ceaaefad6b32d000000000000000000000000000000000000000000000000000000006b24f4631de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e80000000000000000000000000000000000000000000000000000000000000000",
+      "proof": "0x0e39842ce2058c69061930f5eaaab71388604b8909496ed9026d7b258d5161eb0592648f7d93d2c79b30ee0dc2accb06bda894298b5fa73c6a9967cfdf64f53705b55fa0c55198eba9eaf8f934650f63fb2c27b357d18e6c23562850ad948e1500dc2824a46e3f5f1e7735246953d598353b8ad2ed1b84fd3affa7fa4a35c0d90e31fed6bc0edaa067e7341632ef9593e08129b9980af64a0468883f889ada732db014db910d5e1a25a6041d1b5d7d77bc5e6103d755c10e4d72351706ed6de70b6777f24e688507fe2f8c0913320c35bcee4f7b80755889f20de2a417d1dc7b1c1c5419c362d71d58762e7db35684c13aacd1d14731e761e60461174fb611b4",
+      "publicSignals": [
+        "31982017274282915992302197593630746917",
+        "209778961895479986585407407302207896637",
+        "175852164723629593469623764714218549054",
+        "117855159209801022199005436383192820144",
+        "4",
+        "220728972878893122691038849918202566510",
+        "17844576396532501109572181257931371309",
+        "1797583971",
+        "39711533459011723055531477847338844803",
+        "40830941689831994963270280925314069992",
+        "243458242510010916670644591582508864565",
+        "317298270939157734281175182877169776301",
+        "0"
+      ],
+      "verified": {
+        "resolve": 4,
+        "check_min4": true,
+        "nullifierUsed": true
+      },
+      "note": "attestor = demo issuer Bob (issuer hidden on-chain; only the issuer-set root is visible)"
+    },
+    "policy": {
+      "tx": "0xfc3058f2614bc9d4580245f652c14c774336dbc274a65fdce8671e7065a9f25a",
+      "policyId": "0x8f6646e3e358648963bbfc7b5732390f486e3c81ede065fd42886b4314158918",
+      "rules": {
+        "allOf": [
+          {
+            "schemeId": "0xc3d44c830a5c118f980f48317b97e9eaa920a7bbd204c7d3595ac191d4726764",
+            "minLevel": 2,
+            "issuers": [
+              "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+            ]
+          },
+          {
+            "schemeId": "0xb7285a191e9264579d633cf4b2ddd435eeb56c93cf5d08d01afc13134cf376ad",
+            "minLevel": 4,
+            "issuers": [
+              "0x540B7651FA94Cd586599Deb478893D800bc3C2d8"
+            ]
+          }
+        ]
+      },
+      "verified": {
+        "evaluate": true
+      }
+    },
+    "bridge": {
+      "configureTx": "0xadd4237568f9e1263052fef48fa8f9adf3f0cb3002cfa1cd91c546195001d75b",
+      "validationRequestTx": "0xbf990cb45aeed07b3fd7dd12171d6147824b9b95c9ce2b6bc22da7e4d5d30e3d",
+      "syncTx": "0xdab38a990047a7e3bb1a11a76a3fcc4322861ceb9e4dd59fecc3372fc9fd4a81",
+      "requestHash": "0x847922600024f7516fbcf46b226bec4a525d7bb0a8bb1ced17849e525ec5b60f",
+      "tag": "kya:c3d44c83",
+      "verified": {
+        "mirroredResponse": 60,
+        "getSummary": {
+          "count": 1,
+          "averageResponse": 60
+        }
+      }
+    }
+  },
+  "failedAttempts": [
+    {
+      "note": "first attempt at register/registerScheme x2 (nonces 7-9) ran out of gas: hand-set gas limits were ~3% below actual; redone with eth_estimateGas*1.3",
+      "txs": [
+        "0x314088a6b3201a8b45157fd8bd2e50771d15778729cb7793151ed536c3d7377d",
+        "0x21377d377309e3031e63eb4445467d71841e0c3e5f4199c0597ecb09aa641c2a",
+        "0xc009908395674cb2ecd69356cc7613df9faa45ac404b8811d768bb7fbd9a6563"
+      ]
+    }
+  ]
+}
