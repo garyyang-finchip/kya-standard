@@ -5,7 +5,8 @@ import {IKYASchemeRegistry} from "./interfaces/IKYASchemeRegistry.sol";
 import {IERC165} from "./interfaces/IERC165.sol";
 
 /// @title KYASchemeRegistry — reference implementation
-/// @notice Permissionless. Anyone may register a scheme; only its controller may change or freeze it.
+/// @notice Permissionless. Anyone may register a scheme; only its controller may re-point its URI,
+///         freeze it or hand it over. Semantics (hash, mode, verifier, predecessor) never change.
 contract KYASchemeRegistry is IKYASchemeRegistry, IERC165 {
     mapping(bytes32 => Scheme) private _schemes;
     mapping(bytes32 => bool) private _exists;
@@ -25,6 +26,7 @@ contract KYASchemeRegistry is IKYASchemeRegistry, IERC165 {
         bytes32 predecessor
     ) external returns (bytes32 schemeId) {
         if (mode > uint8(SchemeMode.PROVED)) revert KYA_InvalidMode(mode);
+        if (schemeHash == bytes32(0)) revert KYA_SchemeHashRequired();
         if (mode == uint8(SchemeMode.PROVED) && verifier == address(0)) revert KYA_VerifierRequired();
         if (mode == uint8(SchemeMode.ATTESTED)) verifier = address(0);
         if (predecessor != bytes32(0)) {
@@ -50,19 +52,11 @@ contract KYASchemeRegistry is IKYASchemeRegistry, IERC165 {
         emit SchemeRegistered(schemeId, msg.sender, mode, verifier, schemeURI, schemeHash, predecessor);
     }
 
-    function updateScheme(bytes32 schemeId, string calldata schemeURI, bytes32 schemeHash, address verifier)
-        external
-        onlyController(schemeId)
-    {
+    function setSchemeURI(bytes32 schemeId, string calldata schemeURI) external onlyController(schemeId) {
         Scheme storage s = _schemes[schemeId];
         if (s.frozen) revert KYA_Frozen(schemeId);
-        if (s.mode == uint8(SchemeMode.PROVED)) {
-            if (verifier == address(0)) revert KYA_VerifierRequired();
-            s.verifier = verifier;
-        }
         s.schemeURI = schemeURI;
-        s.schemeHash = schemeHash;
-        emit SchemeUpdated(schemeId, schemeURI, schemeHash, s.verifier);
+        emit SchemeURIUpdated(schemeId, schemeURI);
     }
 
     function freezeScheme(bytes32 schemeId) external onlyController(schemeId) {

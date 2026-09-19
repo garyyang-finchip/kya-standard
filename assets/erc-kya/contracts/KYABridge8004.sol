@@ -8,7 +8,10 @@ import {IERC8004ValidationRegistry} from "./interfaces/IERC8004Validation.sol";
 /// @title KYABridge8004 — mirrors KYA conclusions into the ERC-8004 Validation Registry
 /// @notice A bridge is a curated ERC-8004 *validator*: its operator decides, per scheme, which KYA
 ///         issuers it trusts and how scheme levels map onto ERC-8004's 0–100 response scale.
-///         Anyone may call `sync` to refresh the mirrored response — including after a revocation
+///         The mirrored value is an OPTIONAL, LOSSY SNAPSHOT of the KYA Registry taken at `sync`
+///         time: it does not carry expiry, revocation or anchor, and it is only as fresh as the
+///         last sync. ERC-8004-only clients that need the authoritative answer query the KYA
+///         Registry. Anyone may call `sync` to refresh the snapshot — including after a revocation
 ///         or expiry, which drives the response to `responseMap[0]` (normally 0).
 ///
 ///         Flow:
@@ -24,6 +27,7 @@ contract KYABridge8004 {
     error RequestNotFound(bytes32 requestHash);
     error RequestNotForBridge(bytes32 requestHash, address validator);
     error BadResponseMap();
+    error LevelNotMapped(bytes32 schemeId, uint8 level);
 
     event SchemeConfigured(bytes32 indexed schemeId, address[] trustedIssuers, uint8[] responseMap);
     event Synced(uint256 indexed agentId, bytes32 indexed schemeId, bytes32 indexed requestHash, uint8 level, uint8 response, bytes32 assertionId);
@@ -31,7 +35,7 @@ contract KYABridge8004 {
 
     struct SchemeConfig {
         address[] trustedIssuers;
-        uint8[] responseMap; // index = level; levels >= length clamp to last entry
+        uint8[] responseMap; // index = level; a resolved level >= length makes sync revert (never guess upward)
         bool configured;
     }
 
@@ -85,8 +89,10 @@ contract KYABridge8004 {
     // ---------------------------------------------------------------- helpers
 
     /// @notice The requestHash an agent MUST use in `validationRequest` for this (agentId, schemeId).
+    ///         Domain-separated by chain, identity registry AND this bridge, so two bridges mirroring
+    ///         the same scheme for the same agent never collide.
     function requestHashFor(uint256 agentId, bytes32 schemeId) public view returns (bytes32) {
-        return keccak256(abi.encode(REQUEST_TYPE, block.chainid, identityRegistry, agentId, schemeId));
+        return keccak256(abi.encode(REQUEST_TYPE, block.chainid, identityRegistry, address(this), agentId, schemeId));
     }
 
     function subjectFor(uint256 agentId) public view returns (IKYATypes.Subject memory) {
@@ -118,8 +124,8 @@ contract KYABridge8004 {
         bytes32 requestHash = _checkRequest(agentId, schemeId);
         (uint8 level, bytes32 assertionId) = _resolveLevel(agentId, schemeId, c);
 
-        uint256 idx = level < c.responseMap.length ? level : c.responseMap.length - 1;
-        response = c.responseMap[idx];
+        if (level >= c.responseMap.length) revert LevelNotMapped(schemeId, level);
+        response = c.responseMap[level];
 
         _respond(requestHash, response, keccak256(abi.encode(assertionId, level, c.trustedIssuers)), schemeId);
         emit Synced(agentId, schemeId, requestHash, level, response, assertionId);

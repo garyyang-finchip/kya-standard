@@ -6,7 +6,7 @@ A scheme-agnostic registry and handshake standard for recording, resolving and p
 
 ## What it is — in one paragraph
 
-ERC-8004 gives agents identity and raw trust *signals*. This ERC gives the agent economy a shared container for trust *conclusions*: a **Scheme Registry** that addresses and versions KYA principles (what is checked, how the result is expressed as a level, how assertions are admitted), a **KYA Registry** that records assertions (subject · scheme · issuer · level · validity · revocation) and resolves them under a relying party's chosen issuers, an **EIP-712 handshake** for agents to challenge and present, and a minimal **Policy Registry**. The framework never defines a KYA algorithm or a credit rule — those live in scheme descriptors and pluggable `IKYAVerifier` contracts. **ZK-KYA is a mode of the same registry**, not a second standard: an assertion is admitted by a verifier contract checking a proof instead of by an issuer's signature. A **KYA Bridge** mirrors conclusions into the ERC-8004 Validation Registry so ERC-8004-only clients see them under a `kya:` tag.
+ERC-8004 gives agents identity and raw trust *signals*. This ERC gives the agent economy a shared container for trust *conclusions*: a **Scheme Registry** that addresses and versions KYA principles (what is checked, what it binds to — identity / controller / instance — how the result is expressed, how assertions are admitted; semantics immutable per `schemeId`), a **KYA Registry** that records assertions (subject · scheme · issuer · result · validity · anchor · revocation) and resolves them under a relying party's chosen issuers, an **EIP-712 handshake** with normative acceptance rules, and a minimal **Policy Registry** (base + optional on-chain evaluator). The framework never defines a KYA algorithm or a credit rule — those live in scheme descriptors and pluggable `IKYAVerifier` contracts. **ZK-KYA is a mode of the same registry**, not a second standard: an assertion is admitted by a verifier contract checking a proof instead of by an issuer's signature; it hides the fact issuer and the facts, not the subject. A **KYA Bridge** optionally mirrors a lossy snapshot into the ERC-8004 Validation Registry so ERC-8004-only clients see it under a `kya:` tag.
 
 ```
 L4  Policy          "counterparty must satisfy (scheme, minLevel, issuers) …"
@@ -27,8 +27,8 @@ assets/erc-kya/
     KYASchemeRegistry.sol           permissionless scheme registry
     KYARegistry.sol                 assertions: attested + proved modes, supersession, revocation, resolve/check
     KYAPolicyRegistry.sol           policy ids + optional on-chain allOf evaluation
-    KYABridge8004.sol               curated ERC-8004 validator mirroring KYA levels to 0–100
-    verifiers/Groth16KYAVerifierAdapter.sol   snarkjs-style Groth16 → IKYAVerifier (kya-public-v1, 13 signals)
+    KYABridge8004.sol               curated ERC-8004 validator mirroring KYA levels to 0–100 (lossy snapshot; reverts on unmapped levels)
+    verifiers/Groth16KYAVerifierAdapter.sol   snarkjs-style Groth16 → IKYAVerifier (kya-public-v1, 13 signals, epoch window enforced on-chain)
     companions/ValidationRegistry8004.sol     spec-conforming ERC-8004 Validation Registry (canonical one not yet deployed)
     mocks/Mocks.sol                 test-only identity registry and verifiers
   schemas/                          kya-scheme / kya-policy / kya-discovery JSON Schemas
@@ -36,8 +36,8 @@ assets/erc-kya/
 tools/compile.js                    solc-js build → build/artifacts.json
 tools/vectors.js                    regenerates vectors.json
 tools/prepare-pr.sh                 lays the files out as an ethereum/ERCs PR
-test/kya.test.js                    in-process EVM end-to-end suite (17 cases, no RPC needed)
-test/zk.test.js                     real Groth16 proof → Verifier.sol → adapter → KYARegistry (8 cases)
+test/kya.test.js                    in-process EVM end-to-end suite (18 cases, no RPC needed)
+test/zk.test.js                     real Groth16 proof → Verifier.sol → adapter → KYARegistry, incl. adversarial cases (14 cases)
 companions/zk-kya-groth16/          EXPERIMENTAL reference ZK-KYA circuit (circom) + prover tooling + built keys
 scripts/deploy-sepolia.js           deploys the stack to Sepolia against the official ERC-8004 IdentityRegistry
 scripts/examples-sepolia.js         six worked examples on Sepolia (agent, schemes, attested, ZK, policy, bridge)
@@ -48,7 +48,7 @@ scripts/examples-sepolia.js         six worked examples on Sepolia (agent, schem
 ```bash
 npm install
 node tools/compile.js        # solc 0.8.28, optimizer on, cancun
-node test/kya.test.js        # 17 end-to-end tests on an in-process EVM
+node test/kya.test.js        # 18 end-to-end tests on an in-process EVM
 node tools/vectors.js        # regenerate assets/erc-kya/vectors/vectors.json
 npm run test:zk              # ZK companion end-to-end with a real Groth16 proof (uses the shipped test zkey)
 ```
@@ -66,7 +66,9 @@ The deployment binds to the **official ERC-8004 IdentityRegistry on Sepolia** (`
 
 ### Deployed addresses
 
-Deployed 2026-09-19 (chainId 11155111). Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json).
+> **Revision note (2026-09-19, later the same day).** After an external design review the contracts and circuit were revised: scheme semantics made immutable, `anchor` added to assertions, `IKYAVerifier.verify` gained `anchor`, the adapter now enforces the epoch window and the attestor credential is scheme-bound (circuit revision 2), the bridge `requestHash` includes the bridge address and unmapped levels revert. **The addresses below are the revision-1 deployment and are superseded**; the revision-2 deployment will be recorded here and in `deployments/sepolia.json` once broadcast.
+
+Deployed 2026-09-19 (chainId 11155111) — **revision 1, superseded**. Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json).
 
 | contract | address | block |
 |---|---|---|
@@ -89,9 +91,10 @@ Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387** ([regist
 | `schemeId` | `keccak256(abi.encode(controller, schemeHash, controllerNonce))` |
 | `assertionId` | `keccak256(abi.encode(subjectKey, schemeId, issuer, issuerNonce))` |
 | `policyId` | `keccak256(abi.encode(owner, policyHash, ownerNonce))` |
-| bridge `requestHash` | `keccak256(abi.encode(keccak256("erc-kya-request-v1"), chainId, identityRegistry, agentId, schemeId))` |
+| bridge `requestHash` | `keccak256(abi.encode(keccak256("erc-kya-request-v1"), chainId, identityRegistry, bridge, agentId, schemeId))` |
 | bridge `tag` | `"kya:" + first 8 lowercase hex chars of schemeId` |
-| ZK `publicInputs` (kya-public-v1) | `abi.encode(subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch)` — adapter appends `schemeId` as signals (13 total) |
+| ZK `publicInputs` (kya-public-v1) | `abi.encode(subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch)` — adapter appends `schemeId` as signals (13 total) and enforces `current-epochGrace ≤ epoch ≤ current` |
+| ZK credential (rev 2) | attestor signs `Poseidon(subjectKey.hi, .lo, schemeId.hi, .lo, level, claimDigest.hi, .lo, expiresAt, Poseidon(secret))` |
 
 ## Relationship to other standards
 

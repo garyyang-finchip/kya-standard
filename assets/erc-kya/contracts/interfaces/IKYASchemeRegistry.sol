@@ -17,13 +17,14 @@ interface IKYASchemeRegistry is IKYATypes {
         bytes32 schemeHash,
         bytes32 predecessor
     );
-    event SchemeUpdated(bytes32 indexed schemeId, string schemeURI, bytes32 schemeHash, address verifier);
+    event SchemeURIUpdated(bytes32 indexed schemeId, string schemeURI);
     event SchemeFrozen(bytes32 indexed schemeId);
     event SchemeControllerTransferred(bytes32 indexed schemeId, address indexed from, address indexed to);
 
     /// @notice Register a new scheme. schemeId = keccak256(abi.encode(msg.sender, schemeHash, nonce)).
+    ///         schemeHash, mode, verifier and predecessor are immutable for the life of the schemeId.
     /// @param schemeURI   URI of the Scheme Descriptor JSON.
-    /// @param schemeHash  keccak256 of the descriptor bytes (MAY be 0x0 for content-addressed URIs).
+    /// @param schemeHash  keccak256 of the descriptor bytes. MUST be non-zero.
     /// @param mode        SchemeMode (0 = ATTESTED, 1 = PROVED).
     /// @param verifier    IKYAVerifier address; MUST be non-zero iff mode == PROVED.
     /// @param predecessor Previous version's schemeId (same controller) or 0x0.
@@ -35,8 +36,9 @@ interface IKYASchemeRegistry is IKYATypes {
         bytes32 predecessor
     ) external returns (bytes32 schemeId);
 
-    /// @notice Update an unfrozen scheme's descriptor pointer and/or verifier. Controller only.
-    function updateScheme(bytes32 schemeId, string calldata schemeURI, bytes32 schemeHash, address verifier) external;
+    /// @notice Re-point an unfrozen scheme's descriptor URI to another copy of the SAME bytes
+    ///         (schemeHash is unchanged and MUST still match). Controller only.
+    function setSchemeURI(bytes32 schemeId, string calldata schemeURI) external;
 
     /// @notice Irreversibly freeze a scheme. Controller only.
     function freezeScheme(bytes32 schemeId) external;

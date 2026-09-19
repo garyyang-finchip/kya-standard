@@ -6,6 +6,12 @@ const { Block } = require("@ethereumjs/block");
 const { ethers } = require("ethers");
 const artifacts = require("../build/artifacts.json");
 
+// Every custom error from every artifact, so reverts that bubble up through nested calls decode.
+const allErrors = new ethers.Interface(
+  Object.values(artifacts).flatMap((a) => a.abi.filter((f) => f.type === "error"))
+    .filter((f, i, arr) => arr.findIndex((g) => JSON.stringify(g) === JSON.stringify(f)) === i)
+);
+
 class Harness {
   static async create() {
     const h = new Harness();
@@ -53,7 +59,7 @@ class Contract {
     const out = bytesToHex(res.execResult.returnValue);
     if (res.execResult.exceptionError) {
       let reason = res.execResult.exceptionError.error;
-      try { const e = this.iface.parseError(out); if (e) reason = `${e.name}(${e.args.map(String).join(",")})`; } catch {}
+      try { const e = this.iface.parseError(out) || allErrors.parseError(out); if (e) reason = `${e.name}(${e.args.map(String).join(",")})`; } catch {}
       if (reason === "revert" && out.length > 10) { try { reason = ethers.AbiCoder.defaultAbiCoder().decode(["string"], "0x" + out.slice(10))[0]; } catch {} }
       const err = new Error(`${this.name}.${fn} reverted: ${reason}`); err.reason = reason; err.raw = out; throw err;
     }

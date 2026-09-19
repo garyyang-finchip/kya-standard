@@ -54,7 +54,8 @@ const policyHash = ethers.keccak256(fs.readFileSync(path.resolve(__dirname, "../
 const policyId = ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [policyOwner, policyHash, 0n]));
 
 // ---- ERC-8004 bridge ----------------------------------------------------------
-const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identityRegistry, agentId, schemeId]));
+const bridge = "0x5555555555555555555555555555555555555555";
+const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identityRegistry, bridge, agentId, schemeId]));
 const tag = "kya:" + schemeId.slice(2, 10);
 const metadataValue = coder.encode(["address", "bytes32[]"], [kyaRegistry, [schemeId]]);
 
@@ -100,6 +101,7 @@ const interfaceIds = {
   IKYASchemeRegistry: ifaceId(artifacts.IKYASchemeRegistry.abi),
   IKYARegistry: ifaceId(artifacts.IKYARegistry.abi),
   IKYAPolicyRegistry: ifaceId(artifacts.IKYAPolicyRegistry.abi),
+  IKYAPolicyEvaluator: ifaceId(artifacts.IKYAPolicyEvaluator.abi),
   IKYAVerifier: ifaceId(artifacts.IKYAVerifier.abi),
 };
 
@@ -111,7 +113,7 @@ const vectors = {
   assertion: { issuer, issuerNonce: issuerNonce.toString(), assertionId, provedIssuer: verifier, provedAssertionId },
   zk: { layout: "kya-public-v1", signalOrder: "[nullifier.hi, nullifier.lo, subjectKey.hi, subjectKey.lo, level, claimDigest.hi, claimDigest.lo, expiresAt, issuerSetRoot.hi, issuerSetRoot.lo, schemeId.hi, schemeId.lo, epoch]", proverSecret: proverKey, epoch: epoch.toString(), nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },
   policy: { owner: policyOwner, policyHash, nonce: "0", policyId },
-  bridge8004: { requestType: ethers.id("erc-kya-request-v1"), requestHash, tag, metadataKey: "kya", metadataValue },
+  bridge8004: { requestType: ethers.id("erc-kya-request-v1"), bridge, requestHashPreimage: "abi.encode(requestType, chainId, identityRegistry, bridge, agentId, schemeId)", requestHash, tag, metadataKey: "kya", metadataValue },
   eip712: { domain, types, challenge, challengeHash, presentation, presentationHash, zkPresentation, zkPresentationHash, signer: wallet.address, presentationSignature },
   interfaceIds,
 };

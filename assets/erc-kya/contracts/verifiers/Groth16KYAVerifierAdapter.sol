@@ -27,18 +27,29 @@ interface IGroth16Verifier13 {
 ///           [5] claimDigest.hi [6] claimDigest.lo [7] expiresAt
 ///           [8] issuerSetRoot.hi [9] issuerSetRoot.lo
 ///          [10] schemeId.hi   [11] schemeId.lo   — taken from the `schemeId` argument, so the
-///                                                  proof is domain-separated per scheme
-///          [12] epoch                            — 0 when the scheme's nullifierScope is "scheme"
+///                                                  proof is domain-separated per scheme AND the
+///                                                  circuit checks the attestor signed this schemeId
+///          [12] epoch
 ///
-///         `issuerSetRoot` is exposed so relying parties can pin the attestor set the circuit proved
-///         membership in; the adapter optionally enforces a fixed root.
+///         Time-window rule (enforced here, not trusted from the prover):
+///           epochLength == 0  → epoch MUST be 0 (nullifier scope "scheme": one proof per credential)
+///           epochLength  > 0  → current = block.timestamp / epochLength;
+///                               epoch MUST be in [current - epochGrace, current]
+///         `issuerSetRoot` is returned as the assertion `anchor`; the adapter optionally pins it.
 contract Groth16KYAVerifierAdapter is IKYAVerifier {
+    error IssuerSetRootMismatch(bytes32 expected, bytes32 actual);
+    error EpochOutOfWindow(uint64 current, uint64 grace, uint64 actual);
+
     IGroth16Verifier13 public immutable groth16;
     bytes32 public immutable requiredIssuerSetRoot; // 0x0 = any
+    uint64 public immutable epochLength;            // seconds; 0 = scheme-scoped nullifier (epoch must be 0)
+    uint64 public immutable epochGrace;             // how many past epochs remain acceptable
 
-    constructor(address groth16_, bytes32 requiredIssuerSetRoot_) {
+    constructor(address groth16_, bytes32 requiredIssuerSetRoot_, uint64 epochLength_, uint64 epochGrace_) {
         groth16 = IGroth16Verifier13(groth16_);
         requiredIssuerSetRoot = requiredIssuerSetRoot_;
+        epochLength = epochLength_;
+        epochGrace = epochGrace_;
     }
 
     struct Pub {
@@ -51,18 +62,30 @@ contract Groth16KYAVerifierAdapter is IKYAVerifier {
         uint64 epoch;
     }
 
+    /// @notice The epoch a prover MUST use right now (0 when epochLength == 0).
+    function currentEpoch() public view returns (uint64) {
+        return epochLength == 0 ? 0 : uint64(block.timestamp / epochLength);
+    }
+
     function verify(bytes32 schemeId, bytes calldata publicInputs, bytes calldata proof)
         external
         view
-        returns (bool ok, bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt)
+        returns (bool ok, bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt, bytes32 anchor)
     {
         Pub memory p = _decode(publicInputs);
         if (requiredIssuerSetRoot != bytes32(0) && p.issuerSetRoot != requiredIssuerSetRoot) {
-            return (false, bytes32(0), bytes32(0), 0, bytes32(0), 0);
+            revert IssuerSetRootMismatch(requiredIssuerSetRoot, p.issuerSetRoot);
         }
+        _checkEpoch(p.epoch);
         ok = _verifyGroth16(schemeId, p, proof);
-        if (!ok) return (false, bytes32(0), bytes32(0), 0, bytes32(0), 0);
-        return (true, p.subjectKey, p.nullifier, p.level, p.claimDigest, p.expiresAt);
+        if (!ok) return (false, bytes32(0), bytes32(0), 0, bytes32(0), 0, bytes32(0));
+        return (true, p.subjectKey, p.nullifier, p.level, p.claimDigest, p.expiresAt, p.issuerSetRoot);
+    }
+
+    function _checkEpoch(uint64 epoch) internal view {
+        uint64 cur = currentEpoch();
+        uint64 low = cur > epochGrace ? cur - epochGrace : 0;
+        if (epoch > cur || epoch < low) revert EpochOutOfWindow(cur, epochGrace, epoch);
     }
 
     function _decode(bytes calldata publicInputs) internal pure returns (Pub memory p) {

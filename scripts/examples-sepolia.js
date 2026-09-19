@@ -48,7 +48,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   console.log("\n2. schemes");
   const attestedDesc = {
     type: "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1", name: "Controller Binding (attested) v1",
-    description: "Issuer checked that the agent's endpoint and wallet are controlled by one operator.", version: "1.0.0", mode: "attested",
+    description: "Issuer checked that the agent's endpoint and wallet are controlled by one operator.", version: "1.0.0", mode: "attested", binding: "controller", result: { kind: "ordered-level" },
     dimensions: ["controller-binding"], levels: { "0": { label: "not verified", erc8004Response: 0 }, "1": { label: "self-asserted", erc8004Response: 25 }, "2": { label: "controller-linked", erc8004Response: 60 }, "3": { label: "independently verified", erc8004Response: 100 } },
     evidenceKinds: ["domain-proof", "erc8004-validation"], issuerPolicy: { kind: "open" },
   };
@@ -59,12 +59,14 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
 
   const provedDesc = {
     type: "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1", name: "Accountable Operator (ZK) v1",
-    description: "Proves, without disclosure, that a member of the pinned issuer set attested accountability for the agent.", version: "1.0.0", mode: "proved",
+    description: "Proves, without disclosure, that a member of the pinned issuer set attested accountability for the agent.", version: "1.0.0", mode: "proved", binding: "controller", result: { kind: "ordered-level" },
     dimensions: ["accountability", "compliance"], levels: { "0": { label: "not verified", erc8004Response: 0 }, "4": { label: "accountable", erc8004Response: 100 } },
     evidenceKinds: ["zk-proof"], issuerPolicy: { kind: "verifier-only" },
     circuit: { system: "groth16", vkHash: ethers.keccak256(Buffer.from(JSON.stringify(require("../companions/zk-kya-groth16/build/verification_key.json")))),
       publicInputLayout: ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot", "epoch"],
-      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch", epochSeconds: 2592000, issuerHiding: true },
+      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch",
+      epochSeconds: dep.adapterConfig.epochSeconds, epochGrace: dep.adapterConfig.epochGrace, issuerHiding: true, issuerSetRoot: dep.adapterConfig.issuerSetRoot,
+      credentialBinding: ["subjectKey", "schemeId", "level", "claimDigest", "expiresAt", "proverCommitment"] },
   };
   rc = await sendAndWait("registerScheme(proved)", schemes.registerScheme(dataUri(provedDesc), ethers.keccak256(Buffer.from(JSON.stringify(provedDesc))), 1, dep.contracts.Groth16KYAVerifierAdapter.address, ethers.ZeroHash));
   const provedScheme = rc.logs.map((l) => { try { return schemes.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "SchemeRegistered").args.schemeId;
@@ -91,11 +93,12 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   const set = zk.issuerSet(attestors.map((a) => a.pub));
   if (set.rootHex !== dep.demoIssuerSet.root) throw new Error("issuer set root mismatch with deployment");
   const secret = zk.randomSecret();
-  const claim = { subjectKey, level: 4, claimDigest: ethers.id("claims:jurisdiction=SG;entity-verified"), expiresAt };
-  const sig = zk.attest(attestors[1], claim, secret); // Bob signs; on-chain nobody learns it was Bob
-  process.stdout.write("  proving …");
+  const claim = { subjectKey, schemeId: provedScheme, level: 4, claimDigest: ethers.id("claims:jurisdiction=SG;entity-verified"), expiresAt };
+  const sig = zk.attest(attestors[1], claim, secret); // Bob signs a scheme-bound credential; on-chain nobody learns it was Bob
+  const epoch = await adapter.currentEpoch();          // enforced on-chain from block.timestamp
+  process.stdout.write(`  proving (epoch ${epoch}) …`);
   const t0 = Date.now();
-  const pr = await zk.prove({ ...claim, schemeId: provedScheme, epoch: 0, secret, attestor: attestors[1], sig, set });
+  const pr = await zk.prove({ ...claim, epoch, secret, attestor: attestors[1], sig, set });
   console.log(` ${((Date.now() - t0) / 1000).toFixed(1)}s  nullifier ${pr.nullifier}`);
   const v = await adapter.verify(provedScheme, pr.publicInputs, pr.proof);
   console.log(`  adapter.verify → ok=${v.ok} level=${v.level}`);
@@ -119,7 +122,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   rc = await sendAndWait("bridge.configureScheme", bridge.configureScheme(attestedScheme, [wallet.address], [0, 25, 60, 100]));
   const cfgTx = rc.hash;
   const requestHash = await bridge.requestHashFor(agentId, attestedScheme);
-  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
+  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: dep.contracts.KYABridge8004.address, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
   const reqTx = rc.hash;
   rc = await sendAndWait("bridge.sync", bridge.sync(agentId, attestedScheme));
   const st = await validation.getValidationStatus(requestHash);

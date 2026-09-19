@@ -43,7 +43,10 @@ const DEMO_ATTESTOR_SEEDS = ["kya-demo-issuer-alice", "kya-demo-issuer-bob", "ky
   const validation = await deploy("ValidationRegistry8004", [net.identityRegistry]);
   await deploy("KYABridge8004", [await kya.getAddress(), await validation.getAddress(), wallet.address]);
   const g16 = await deploy("Groth16Verifier");
-  await deploy("Groth16KYAVerifierAdapter", [await g16.getAddress(), set.rootHex]);
+  // epoch window: 30-day epochs, previous epoch still accepted (revocation latency ≤ 30 d)
+  const EPOCH_SECONDS = 2592000, EPOCH_GRACE = 1;
+  out.adapterConfig = { epochSeconds: EPOCH_SECONDS, epochGrace: EPOCH_GRACE, issuerSetRoot: set.rootHex };
+  await deploy("Groth16KYAVerifierAdapter", [await g16.getAddress(), set.rootHex, EPOCH_SECONDS, EPOCH_GRACE]);
 
   const p = saveJson("sepolia.json", out);
   console.log(`\nwrote ${p}`);

@@ -17,12 +17,13 @@ contract MockKYAVerifier is IKYAVerifier {
     function verify(bytes32, bytes calldata publicInputs, bytes calldata proof)
         external
         view
-        returns (bool ok, bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt)
+        returns (bool ok, bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt, bytes32 anchor)
     {
         (subjectKey, nullifier, level, claimDigest, expiresAt) =
             abi.decode(publicInputs, (bytes32, bytes32, uint8, bytes32, uint64));
         ok = keccak256(proof) == keccak256(abi.encode(keccak256(publicInputs), secret));
-        if (!ok) return (false, 0, 0, 0, 0, 0);
+        if (!ok) return (false, 0, 0, 0, 0, 0, 0);
+        anchor = keccak256("mock-anchor");
     }
 }
 

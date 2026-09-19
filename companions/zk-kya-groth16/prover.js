@@ -4,9 +4,10 @@
 //   const attestor = zk.newAttestor(seed);               // EdDSA (Baby Jubjub) key
 //   const set = zk.issuerSet([attestor.pub, ...]);        // Poseidon Merkle tree, depth 16
 //   const secret = zk.randomSecret();
-//   const claim = { subjectKey, level, claimDigest, expiresAt };
+//   const claim = { subjectKey, schemeId, level, claimDigest, expiresAt };   // scheme-bound credential
 //   const sig = zk.attest(attestor, claim, secret);       // attestor signs (claim, Poseidon(secret))
-//   const { publicInputs, proof } = await zk.prove({ ...claim, schemeId, epoch, secret, attestor, sig, set });
+//   const epoch = zk.epochFor(nowSeconds, epochLength);   // must match the adapter's window
+//   const { publicInputs, proof } = await zk.prove({ ...claim, epoch, secret, attestor, sig, set });
 //   // → kya.attestWithProof(subject, schemeId, publicInputs, proof, evidenceURI)
 //
 // All 256-bit values are bytes32 hex strings on the JS side and split into (hi128, lo128) for the circuit.
@@ -73,11 +74,19 @@ class ZK {
     return { root, rootHex: ethers.toBeHex(root, 32), leaves, proofFor };
   }
 
-  // ---- what the attestor signs ----
+  // ---- what the attestor signs (revision 2: schemeId is part of the credential) ----
   message(claim, secret) {
+    if (!claim.schemeId) throw new Error("claim.schemeId required (credential is scheme-bound)");
     const [skHi, skLo] = split(claim.subjectKey);
+    const [siHi, siLo] = split(claim.schemeId);
     const [cdHi, cdLo] = split(claim.claimDigest);
-    return this.H(skHi, skLo, BigInt(claim.level), cdHi, cdLo, BigInt(claim.expiresAt), this.H(secret));
+    return this.H(skHi, skLo, siHi, siLo, BigInt(claim.level), cdHi, cdLo, BigInt(claim.expiresAt), this.H(secret));
+  }
+
+  // ---- epoch the adapter will accept: floor(now / epochLength); 0 when epochLength == 0 ----
+  epochFor(nowSeconds, epochLength) {
+    const L = BigInt(epochLength || 0);
+    return L === 0n ? 0n : BigInt(nowSeconds) / L;
   }
 
   attest(attestor, claim, secret) {

@@ -1,11 +1,19 @@
 pragma circom 2.1.6;
 
-// ERC-KYA companion: reference ZK-KYA circuit for the `kya-public-v1` layout.
+// ERC-KYA companion: reference ZK-KYA circuit for the `kya-public-v1` layout — circuit revision 2.
 //
-// Statement proved (issuer-hiding attestation):
+// Statement proved (issuer-hiding attestation; the SUBJECT is public, the issuer and the
+// underlying facts are not):
 //   "An attestor whose key is a member of the issuer set committed to by `issuerSetRoot`
-//    signed (subjectKey, level, claimDigest, expiresAt, Poseidon(secret)), and I know `secret`.
-//    My nullifier for (schemeId, epoch) is Poseidon(secret, schemeIdHi, schemeIdLo, epoch)."
+//    signed (subjectKey, schemeId, level, claimDigest, expiresAt, Poseidon(secret)), and I know
+//    `secret`. My nullifier for (schemeId, epoch) is Poseidon(secret, schemeIdHi, schemeIdLo, epoch)."
+//
+// Revision 2 changes (2026-09-19, after external review):
+//   * schemeId is part of the signed credential, so a credential issued under scheme A cannot be
+//     presented under scheme B even when both schemes share attestors (cross-scheme replay).
+//   * Split128 uses Num2Bits_strict (alias-checked) so a field element has exactly one (hi, lo).
+//   * epoch is still a public input; the on-chain adapter enforces epoch == floor(now/epochLength)
+//     within a grace window, so the prover cannot mint fresh nullifiers by picking epochs.
 //
 // Public signals (snarkjs order: outputs first, then public inputs in declaration order):
 //   [0] nullifierHi   (output)
@@ -28,14 +36,16 @@ pragma circom 2.1.6;
 include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "../../../node_modules/circomlib/circuits/eddsaposeidon.circom";
 include "../../../node_modules/circomlib/circuits/bitify.circom";
+include "../../../node_modules/circomlib/circuits/aliascheck.circom";
 include "../../../node_modules/circomlib/circuits/mux1.circom";
 
-// Split a field element into (hi128, lo128).
+// Split a field element into (hi128, lo128). Strict: the 254-bit decomposition is alias-checked
+// (< p), so every field element has exactly one representation.
 template Split128() {
     signal input in;
     signal output hi;
     signal output lo;
-    component n2b = Num2Bits(254);
+    component n2b = Num2Bits_strict();
     n2b.in <== in;
     component loB = Bits2Num(128);
     component hiB = Bits2Num(126);
@@ -116,15 +126,17 @@ template KYAPublicV1(depth) {
     component pc = Poseidon(1);
     pc.inputs[0] <== secret;
 
-    // message the attestor signed
-    component msg = Poseidon(7);
+    // message the attestor signed — includes schemeId (credential is scheme-bound)
+    component msg = Poseidon(9);
     msg.inputs[0] <== subjectKeyHi;
     msg.inputs[1] <== subjectKeyLo;
-    msg.inputs[2] <== level;
-    msg.inputs[3] <== claimDigestHi;
-    msg.inputs[4] <== claimDigestLo;
-    msg.inputs[5] <== expiresAt;
-    msg.inputs[6] <== pc.out;
+    msg.inputs[2] <== schemeIdHi;
+    msg.inputs[3] <== schemeIdLo;
+    msg.inputs[4] <== level;
+    msg.inputs[5] <== claimDigestHi;
+    msg.inputs[6] <== claimDigestLo;
+    msg.inputs[7] <== expiresAt;
+    msg.inputs[8] <== pc.out;
 
     component sig = EdDSAPoseidonVerifier();
     sig.enabled <== 1;

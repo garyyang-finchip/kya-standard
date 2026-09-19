@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
 
-import {IKYAPolicyRegistry} from "./interfaces/IKYAPolicyRegistry.sol";
+import {IKYAPolicyRegistry, IKYAPolicyEvaluator} from "./interfaces/IKYAPolicyRegistry.sol";
 import {IKYARegistry} from "./interfaces/IKYARegistry.sol";
 import {IERC165} from "./interfaces/IERC165.sol";
 
-/// @title KYAPolicyRegistry — reference implementation (minimal)
-contract KYAPolicyRegistry is IKYAPolicyRegistry, IERC165 {
+/// @title KYAPolicyRegistry — reference implementation (base + optional evaluator)
+contract KYAPolicyRegistry is IKYAPolicyRegistry, IKYAPolicyEvaluator, IERC165 {
     struct PolicyRec {
         address owner;
         string policyURI;
@@ -67,6 +67,7 @@ contract KYAPolicyRegistry is IKYAPolicyRegistry, IERC165 {
     }
 
     function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
-        return interfaceId == type(IKYAPolicyRegistry).interfaceId || interfaceId == type(IERC165).interfaceId;
+        return interfaceId == type(IKYAPolicyRegistry).interfaceId || interfaceId == type(IKYAPolicyEvaluator).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 }

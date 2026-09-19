@@ -93,7 +93,13 @@ contract KYARegistry is IKYARegistry, IERC165 {
         if (s.mode != uint8(SchemeMode.ATTESTED)) revert KYA_ModeMismatch(schemeId, uint8(SchemeMode.ATTESTED), s.mode);
         if (expiresAt != 0 && expiresAt <= block.timestamp) revert KYA_Expired(expiresAt);
 
-        assertionId = _record(subjectKeyOf(subject), schemeId, msg.sender, level, claimDigest, expiresAt, evidenceURI, evidenceHash);
+        Assertion memory a;
+        a.subjectKey = subjectKeyOf(subject);
+        a.level = level;
+        a.claimDigest = claimDigest;
+        a.expiresAt = expiresAt;
+        a.evidenceHash = evidenceHash;
+        assertionId = _record(a, schemeId, msg.sender, evidenceURI);
     }
 
     function attestWithProof(
@@ -106,7 +112,7 @@ contract KYARegistry is IKYARegistry, IERC165 {
         address verifier = _provedVerifier(schemeId);
         Assertion memory a = _verify(verifier, subjectKeyOf(subject), schemeId, publicInputs, proof);
 
-        assertionId = _record(a.subjectKey, schemeId, verifier, a.level, a.claimDigest, a.expiresAt, evidenceURI, a.evidenceHash);
+        assertionId = _record(a, schemeId, verifier, evidenceURI);
     }
 
     function _provedVerifier(bytes32 schemeId) internal view returns (address verifier) {
@@ -121,18 +127,18 @@ contract KYARegistry is IKYARegistry, IERC165 {
         internal
         returns (Assertion memory a)
     {
-        (bool ok, bytes32 provedSubjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt) =
+        bool ok;
+        bytes32 provedSubjectKey;
+        bytes32 nullifier;
+        (ok, provedSubjectKey, nullifier, a.level, a.claimDigest, a.expiresAt, a.anchor) =
             IKYAVerifier(verifier).verify(schemeId, publicInputs, proof);
         if (!ok) revert KYA_VerifierRejected();
         if (provedSubjectKey != subjectKey) revert KYA_SubjectMismatch(subjectKey, provedSubjectKey);
         if (_nullifiers[schemeId][nullifier]) revert KYA_NullifierUsed(schemeId, nullifier);
         _nullifiers[schemeId][nullifier] = true;
-        if (expiresAt != 0 && expiresAt <= block.timestamp) revert KYA_Expired(expiresAt);
+        if (a.expiresAt != 0 && a.expiresAt <= block.timestamp) revert KYA_Expired(a.expiresAt);
 
         a.subjectKey = subjectKey;
-        a.level = level;
-        a.claimDigest = claimDigest;
-        a.expiresAt = expiresAt;
         a.evidenceHash = keccak256(publicInputs);
     }
 
@@ -156,40 +162,35 @@ contract KYARegistry is IKYARegistry, IERC165 {
         s = schemeRegistry.getScheme(schemeId);
     }
 
-    function _record(
-        bytes32 subjectKey,
-        bytes32 schemeId,
-        address issuer,
-        uint8 level,
-        bytes32 claimDigest,
-        uint64 expiresAt,
-        string calldata evidenceURI,
-        bytes32 evidenceHash
-    ) internal returns (bytes32 assertionId) {
+    /// @dev `a` carries subjectKey, level, claimDigest, expiresAt, evidenceHash, anchor.
+    function _record(Assertion memory a, bytes32 schemeId, address issuer, string calldata evidenceURI)
+        internal
+        returns (bytes32 assertionId)
+    {
         uint256 nonce = _issuerNonce[issuer]++;
-        assertionId = keccak256(abi.encode(subjectKey, schemeId, issuer, nonce));
+        assertionId = keccak256(abi.encode(a.subjectKey, schemeId, issuer, nonce));
 
-        _assertions[assertionId] = Assertion({
-            subjectKey: subjectKey,
-            schemeId: schemeId,
-            issuer: issuer,
-            level: level,
-            claimDigest: claimDigest,
-            issuedAt: uint64(block.timestamp),
-            expiresAt: expiresAt,
-            evidenceHash: evidenceHash,
-            status: uint8(AssertionStatus.ACTIVE)
-        });
+        a.schemeId = schemeId;
+        a.issuer = issuer;
+        a.issuedAt = uint64(block.timestamp);
+        a.status = uint8(AssertionStatus.ACTIVE);
+        _assertions[assertionId] = a;
         _exists[assertionId] = true;
 
-        bytes32 prev = _latest[subjectKey][schemeId][issuer];
+        bytes32 prev = _latest[a.subjectKey][schemeId][issuer];
         if (prev != bytes32(0) && _assertions[prev].status == uint8(AssertionStatus.ACTIVE)) {
             _assertions[prev].status = uint8(AssertionStatus.SUPERSEDED);
             emit Superseded(prev, assertionId);
         }
-        _latest[subjectKey][schemeId][issuer] = assertionId;
+        _latest[a.subjectKey][schemeId][issuer] = assertionId;
 
-        emit Asserted(assertionId, subjectKey, schemeId, issuer, level, claimDigest, expiresAt, evidenceURI, evidenceHash);
+        _emitAsserted(assertionId, a, evidenceURI);
+    }
+
+    function _emitAsserted(bytes32 assertionId, Assertion memory a, string calldata evidenceURI) internal {
+        emit Asserted(
+            assertionId, a.subjectKey, a.schemeId, a.issuer, a.level, a.claimDigest, a.expiresAt, evidenceURI, a.evidenceHash, a.anchor
+        );
     }
 
     function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
