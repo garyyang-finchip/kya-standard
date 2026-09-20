@@ -7,8 +7,13 @@
 //   const claim = { subjectKey, schemeId, level, claimDigest, expiresAt };   // scheme-bound credential
 //   const sig = zk.attest(attestor, claim, secret);       // attestor signs (claim, Poseidon(secret))
 //   const epoch = zk.epochFor(nowSeconds, epochLength);   // must match the adapter's window
-//   const { publicInputs, proof } = await zk.prove({ ...claim, epoch, secret, attestor, sig, set });
+//   const admissionDomain = zk.admissionDomain(chainId, schemeRegistry, kyaRegistry); // == kya.admissionDomain()
+//   const { publicInputs, proof } = await zk.prove({ ...claim, epoch, admissionDomain, secret, attestor, sig, set });
 //   // → kya.attestWithProof(subject, schemeId, publicInputs, proof, evidenceURI)
+//
+// Circuit revision 3: the proof (not the credential) is bound to the admitting registry's
+// admissionDomain, and the nullifier is scoped to (schemeId, admissionDomain, epoch). The same
+// credential can be proved again for another registry; the same proof cannot be moved.
 //
 // All 256-bit values are bytes32 hex strings on the JS side and split into (hi128, lo128) for the circuit.
 const path = require("path");
@@ -95,13 +100,21 @@ class ZK {
     return { R8x: this.F.toObject(s.R8[0]), R8y: this.F.toObject(s.R8[1]), S: s.S };
   }
 
-  nullifier(secret, schemeId, epoch) {
+  // ---- admission domain a KYA Registry computes for itself (KYARegistry.admissionDomain()) ----
+  admissionDomain(chainId, schemeRegistry, kyaRegistry) {
+    return ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address"],
+      [ethers.id("erc-kya-registry-admission-v1"), chainId, schemeRegistry, kyaRegistry]));
+  }
+
+  nullifier(secret, schemeId, admissionDomain, epoch) {
     const [hi, lo] = split(schemeId);
-    return this.H(secret, hi, lo, BigInt(epoch));
+    const [dh, dl] = split(admissionDomain);
+    return this.H(secret, hi, lo, dh, dl, BigInt(epoch));
   }
 
   // ---- proving ----
-  async prove({ subjectKey, level, claimDigest, expiresAt, schemeId, epoch = 0, secret, attestor, sig, set, leafIndex }) {
+  async prove({ subjectKey, level, claimDigest, expiresAt, schemeId, epoch = 0, admissionDomain, secret, attestor, sig, set, leafIndex }) {
+    if (!admissionDomain) throw new Error("admissionDomain required (proof is bound to the admitting registry)");
     const idx = leafIndex ?? set.leaves.indexOf(attestor.leaf);
     if (idx < 0) throw new Error("attestor not in issuer set");
     const { pathElements, pathIndices } = set.proofFor(idx);
@@ -109,11 +122,13 @@ class ZK {
     const [cdHi, cdLo] = split(claimDigest);
     const [rtHi, rtLo] = split(set.rootHex);
     const [siHi, siLo] = split(schemeId);
+    const [adHi, adLo] = split(admissionDomain);
 
     const input = {
       subjectKeyHi: skHi, subjectKeyLo: skLo, level: BigInt(level),
       claimDigestHi: cdHi, claimDigestLo: cdLo, expiresAt: BigInt(expiresAt),
       issuerSetRootHi: rtHi, issuerSetRootLo: rtLo, schemeIdHi: siHi, schemeIdLo: siLo, epoch: BigInt(epoch),
+      admissionDomainHi: adHi, admissionDomainLo: adLo,
       secret, Ax: attestor.pub[0], Ay: attestor.pub[1], S: sig.S, R8x: sig.R8x, R8y: sig.R8y,
       pathElements, pathIndices,
     };

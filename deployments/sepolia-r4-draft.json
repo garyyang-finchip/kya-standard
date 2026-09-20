@@ -1,0 +1,122 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "revision": "4-draft (registry-bound schemeId; superseded before publication)",
+  "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+  "deployedAt": "2026-09-20",
+  "note": "SUPERSEDED DRAFT, never published as revision 4. Implemented option B of the second review round (admitting KYA Registry folded into schemeId, KYA_WrongRegistry). Replaced the same day by the admission-domain design (circuit rev 3) after advisory review; kept only so the nonce range 52\u201367 on the deployer is accounted for. Revision 4 (second-round review): schemeId now embeds the admitting KYA registry (H(chainId, schemeRegistry, registry, controller, schemeHash, nonce)) and a KYARegistry refuses schemes registered for another registry (KYA_WrongRegistry), so the replay/nullifier domain and the scheme identity coincide; bridge configHash is committed in responseHash only (not requestHash), so a reconfiguration updates the same ERC-8004 validation record instead of filing a new one. Circuit unchanged from revision 2 (Groth16Verifier bytecode identical, redeployed for a self-contained stack). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
+  "erc8004": {
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "validationRegistry": "not deployed by ERC-8004 authors yet \u2014 companion ValidationRegistry8004 used"
+  },
+  "contracts": {
+    "KYASchemeRegistry": {
+      "address": "0x7081ED83fF5caCC4031203E8c9e46416646DFE0C",
+      "tx": "0xd059b2962235ca5f97f224fcd9976314817d880ec998d8a4d615d91098b84ffb",
+      "block": 11744499,
+      "gasUsed": 858377,
+      "nonce": 52,
+      "args": []
+    },
+    "KYARegistry": {
+      "address": "0x3438f2DfECEFa66A327195d1Ed8AFF83eA7698A6",
+      "tx": "0x5c060d67ca490c8a4bca11046d12288caa410907508a913069b39b94353c7016",
+      "block": 11744499,
+      "gasUsed": 1872701,
+      "nonce": 53,
+      "args": [
+        "0x7081ED83fF5caCC4031203E8c9e46416646DFE0C"
+      ]
+    },
+    "KYAPolicyRegistry": {
+      "address": "0x8b41b894D04ac74D6C39ad42c5c0377B12759874",
+      "tx": "0x486f6ddfa605e2896a9ff1e07462d05bb32130e1036e57efe187c69cd6da2833",
+      "block": 11744499,
+      "gasUsed": 988029,
+      "nonce": 54,
+      "args": [
+        "0x3438f2DfECEFa66A327195d1Ed8AFF83eA7698A6"
+      ]
+    },
+    "ValidationRegistry8004": {
+      "address": "0x6681f3705F4Cf8F4059c1b76c59990Cf7Bc45d75",
+      "tx": "0x957f18bcd288d536a1048bd3749e80b3b3a3a04edcd7ad05d302138f36cb9ba2",
+      "block": 11744499,
+      "gasUsed": 984956,
+      "nonce": 55,
+      "args": [
+        "0x8004A818BFB912233c491871b3d84c89A494BD9e"
+      ]
+    },
+    "KYABridge8004": {
+      "address": "0x5Edb33d3bD2A575f6C0917021D2312d88c95Ba1b",
+      "tx": "0xccbb4ed3531af88aa740aa07db6504964eb5bcaca9ed7e88b7f29d5afb3af8a2",
+      "block": 11744502,
+      "gasUsed": 1281971,
+      "nonce": 56,
+      "args": [
+        "0x3438f2DfECEFa66A327195d1Ed8AFF83eA7698A6",
+        "0x6681f3705F4Cf8F4059c1b76c59990Cf7Bc45d75",
+        "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+      ]
+    },
+    "Groth16Verifier": {
+      "address": "0x916B65ff6ECdf8bfB66a0a6B722FC561f2119862",
+      "tx": "0x2731bbb048b7eaf2292c91b642de9c405b539584cee56b081feb2d3281d0cb25",
+      "block": 11744502,
+      "gasUsed": 588302,
+      "nonce": 57,
+      "args": []
+    },
+    "Groth16KYAVerifierAdapter": {
+      "address": "0xA1F0B64D1aa74E55b1b0eb561670D45a9154acFd",
+      "tx": "0x98614c1e87e2860800622b641c659c7203a2edfc590f59cd97f17548fd8e4e8c",
+      "block": 11744502,
+      "gasUsed": 687828,
+      "nonce": 58,
+      "args": [
+        "0x916B65ff6ECdf8bfB66a0a6B722FC561f2119862",
+        "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+        "2592000",
+        "1"
+      ]
+    }
+  },
+  "adapterConfig": {
+    "epochSeconds": 2592000,
+    "epochGrace": 1,
+    "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+  },
+  "demoIssuerSet": {
+    "seeds": [
+      "kya-demo-issuer-alice",
+      "kya-demo-issuer-bob",
+      "kya-demo-issuer-carol"
+    ],
+    "root": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+    "note": "TEST ONLY \u2014 attestor keys derive from public seeds"
+  },
+  "zk": {
+    "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 2)",
+    "vkHash": "0xd700e6c18b1d3286e0114b6d9fa16121b85e88318bc80e396936e02081bd001c",
+    "ceremony": "single-party test ceremony (pot15 reused from revision 1, fresh phase 2)"
+  },
+  "superseded": [
+    {
+      "revision": 3,
+      "file": "deployments/sepolia-r3.json",
+      "note": "schemeId not scoped to the admitting KYA registry; bridge configHash in requestHash (one 8004 record per configuration)"
+    },
+    {
+      "revision": 2,
+      "file": "deployments/sepolia-r2.json",
+      "note": "lacks binding witness/predicate, rulesHash, configHash, code-hash pinning; schemeIds not chain/registry-scoped"
+    },
+    {
+      "revision": 1,
+      "file": "deployments/sepolia-r1.json",
+      "note": "circuit rev 1 \u2014 do not rely on"
+    }
+  ]
+}

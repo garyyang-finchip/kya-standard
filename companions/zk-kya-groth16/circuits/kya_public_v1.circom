@@ -1,12 +1,21 @@
 pragma circom 2.1.6;
 
-// ERC-KYA companion: reference ZK-KYA circuit for the `kya-public-v1` layout — circuit revision 2.
+// ERC-KYA companion: reference ZK-KYA circuit for the `kya-public-v1` layout — circuit revision 3.
 //
 // Statement proved (issuer-hiding attestation; the SUBJECT is public, the issuer and the
 // underlying facts are not):
 //   "An attestor whose key is a member of the issuer set committed to by `issuerSetRoot`
 //    signed (subjectKey, schemeId, level, claimDigest, expiresAt, Poseidon(secret)), and I know
-//    `secret`. My nullifier for (schemeId, epoch) is Poseidon(secret, schemeIdHi, schemeIdLo, epoch)."
+//    `secret`. My nullifier for (schemeId, admissionDomain, epoch) is
+//    Poseidon(secret, schemeIdHi, schemeIdLo, admissionDomainHi, admissionDomainLo, epoch)."
+//
+// Revision 3 changes (2026-09-20, after the second review round):
+//   * admissionDomain is a public input, fed by the on-chain adapter from the value the ADMITTING
+//     KYA Registry computed for itself (chain, scheme registry, registry address). The nullifier is
+//     derived from it, so a proof made for registry A verifies only against A's domain and its
+//     nullifier lives in A's scope: registry B cannot admit A's proof, and the same credential can
+//     be re-proved for B with a B-scoped nullifier. The CREDENTIAL (attestor signature) is unchanged
+//     and does not name a registry — the rule is reusable, the proof is not.
 //
 // Revision 2 changes (2026-09-19, after external review):
 //   * schemeId is part of the signed credential, so a credential issued under scheme A cannot be
@@ -29,6 +38,8 @@ pragma circom 2.1.6;
 //  [10] schemeIdHi     (fed by the on-chain adapter from its `schemeId` argument)
 //  [11] schemeIdLo
 //  [12] epoch
+//  [13] admissionDomainHi (fed by the on-chain adapter from its `admissionDomain` argument)
+//  [14] admissionDomainLo
 //
 // 256-bit values are carried as (hi128, lo128) so they fit in the BN254 scalar field.
 // The Merkle root and the nullifier are Poseidon outputs (< p), split the same way.
@@ -96,6 +107,8 @@ template KYAPublicV1(depth) {
     signal input schemeIdHi;
     signal input schemeIdLo;
     signal input epoch;
+    signal input admissionDomainHi;
+    signal input admissionDomainLo;
 
     // ---- private inputs ----
     signal input secret;
@@ -121,6 +134,8 @@ template KYAPublicV1(depth) {
     component cdl = Num2Bits(128); cdl.in <== claimDigestLo;
     component sih = Num2Bits(128); sih.in <== schemeIdHi;
     component sil = Num2Bits(128); sil.in <== schemeIdLo;
+    component adh = Num2Bits(128); adh.in <== admissionDomainHi;
+    component adl = Num2Bits(128); adl.in <== admissionDomainLo;
 
     // prover commitment bound into the signed message
     component pc = Poseidon(1);
@@ -162,16 +177,18 @@ template KYAPublicV1(depth) {
     rootSplit.hi === issuerSetRootHi;
     rootSplit.lo === issuerSetRootLo;
 
-    // nullifier scoped to (schemeId, epoch)
-    component nul = Poseidon(4);
+    // nullifier scoped to (schemeId, admissionDomain, epoch)
+    component nul = Poseidon(6);
     nul.inputs[0] <== secret;
     nul.inputs[1] <== schemeIdHi;
     nul.inputs[2] <== schemeIdLo;
-    nul.inputs[3] <== epoch;
+    nul.inputs[3] <== admissionDomainHi;
+    nul.inputs[4] <== admissionDomainLo;
+    nul.inputs[5] <== epoch;
     component nulSplit = Split128();
     nulSplit.in <== nul.out;
     nullifierHi <== nulSplit.hi;
     nullifierLo <== nulSplit.lo;
 }
 
-component main { public [subjectKeyHi, subjectKeyLo, level, claimDigestHi, claimDigestLo, expiresAt, issuerSetRootHi, issuerSetRootLo, schemeIdHi, schemeIdLo, epoch] } = KYAPublicV1(16);
+component main { public [subjectKeyHi, subjectKeyLo, level, claimDigestHi, claimDigestLo, expiresAt, issuerSetRootHi, issuerSetRootLo, schemeIdHi, schemeIdLo, epoch, admissionDomainHi, admissionDomainLo] } = KYAPublicV1(16);

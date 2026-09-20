@@ -8,15 +8,17 @@
 
 > "An attestor whose EdDSA key is a member of the issuer set committed to by `issuerSetRoot` signed
 > `(subjectKey, schemeId, level, claimDigest, expiresAt, Poseidon(secret))`, and I know `secret`.
-> My nullifier for `(schemeId, epoch)` is `Poseidon(secret, schemeId.hi, schemeId.lo, epoch)`."
+> My nullifier for `(schemeId, admissionDomain, epoch)` is `Poseidon(secret, schemeId.hi, .lo, admissionDomain.hi, .lo, epoch)`."
 
 This is the **issuer-hiding** shape from Section 5 of the ERC: the chain learns *which agent*, the level, the claim digest, the expiry and *which issuer set* vouched — never *which issuer* and never the underlying facts. It is not anonymous: `subjectKey` is public and re-proofs of the same subject are linkable by it. The attestor binds the prover into the signed message through `Poseidon(secret)`, so only the party holding `secret` can turn the credential into an assertion; the credential names the `schemeId`, so it cannot be presented under another scheme; and the nullifier lets that party re-prove once per epoch, where the epoch is enforced by the on-chain adapter from `block.timestamp` (not chosen by the prover).
 
+**Circuit revision 3** (after the second review round): `admissionDomain` — computed by the admitting KYA Registry from `(chainId, schemeRegistry, itself)` and passed to the adapter, never chosen by the prover — is a public input and part of the nullifier. A proof made for registry A verifies only under A's domain and its nullifier lives in A's scope; the *credential* does not name a registry, so the same credential can be re-proved for registry B. Revision 2 keys and the revision 2/3/4-draft Sepolia deployments are superseded.
+
 **Circuit revision 2** (after external review): `schemeId` added to the signed credential (closes cross-scheme replay); `Split128` uses `Num2Bits_strict` (unique hi/lo encoding, closes nullifier aliasing); epoch window enforced by `Groth16KYAVerifierAdapter(epochLength, epochGrace)`. Revision 1 keys and the revision 1 Sepolia deployment are superseded.
 
-Constraints: ~14.4k non-linear (EdDSA-Poseidon verify + Poseidon Merkle depth 16 + Poseidon(9) message and Poseidon(4) nullifier + strict range checks). Proving time on a laptop: 2–4 s.
+Constraints: ~14.4k non-linear (EdDSA-Poseidon verify + Poseidon Merkle depth 16 + Poseidon(9) message and Poseidon(6) nullifier + strict range checks). Proving time on a laptop: 2–4 s.
 
-## Public signals (13, snarkjs order)
+## Public signals (15, snarkjs order)
 
 | # | signal | source |
 |---|---|---|
@@ -28,8 +30,9 @@ Constraints: ~14.4k non-linear (EdDSA-Poseidon verify + Poseidon Merkle depth 16
 | 8–9 | `issuerSetRoot.hi/lo` | `publicInputs` |
 | 10–11 | `schemeId.hi/lo` | **the adapter's `schemeId` argument** — the prover cannot pick it |
 | 12 | `epoch` | `publicInputs` — adapter requires `current - epochGrace <= epoch <= current` |
+| 13–14 | `admissionDomain.hi/lo` | **the adapter's `admissionDomain` argument** — computed by the calling KYA Registry (`admissionDomain()`), never by the prover; folded into the nullifier |
 
-`publicInputs = abi.encode(subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch)` — the canonical `kya-public-v1` layout. 256-bit values are split into `(hi128, lo128)` so nothing is truncated under the BN254 scalar field. The on-chain `Groth16KYAVerifierAdapter` reconstructs exactly this vector (`adapter.signals(schemeId, pub)` exposes it for tooling).
+`publicInputs = abi.encode(subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch)` — the canonical `kya-public-v1` layout. 256-bit values are split into `(hi128, lo128)` so nothing is truncated under the BN254 scalar field. The on-chain `Groth16KYAVerifierAdapter` reconstructs exactly this vector (`adapter.signals(schemeId, admissionDomain, pub)` exposes it for tooling).
 
 ## Files
 
@@ -56,7 +59,7 @@ Replace `zk:setup` with a real ceremony (e.g. a Hermez `powersOfTau28_hez_final_
 
 The framework does not care what you prove. Keep three things and you stay compatible with every KYA Registry:
 
-1. Output or expose `subjectKey` and a `nullifier` scoped at least to `schemeId`, and make the fact issuer's credential commit to `schemeId` (Section 5 binding rules).
+1. Output or expose `subjectKey` and a `nullifier` scoped at least to `(schemeId, admissionDomain)`, bind the proof to both values the adapter receives, and make the fact issuer's credential commit to `schemeId` — not to a registry (Section 5 binding rules).
 2. Publish the layout in the Scheme Descriptor's `circuit.publicInputLayout` / `publicInputAbi`, plus `epochSeconds` / `epochGrace`.
 3. Ship an `IKYAVerifier` adapter that decodes your `publicInputs`, enforces the epoch window from `block.timestamp`, feeds the verifier, and returns `(ok, subjectKey, nullifier, level, claimDigest, expiresAt, anchor)`.
 

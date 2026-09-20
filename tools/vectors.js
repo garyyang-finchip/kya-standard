@@ -33,6 +33,9 @@ const schemeBytes = fs.readFileSync(path.resolve(__dirname, "../assets/erc-kya/v
 const schemeHash = ethers.keccak256(schemeBytes);
 const schemeNonce = 0n;
 const schemeId = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [chainId, schemeRegistry, controller, schemeHash, schemeNonce]));
+// admission domain the KYA Registry at `kyaRegistry` computes for itself (Section 5)
+const REGISTRY_ADMISSION_TYPE = ethers.id("erc-kya-registry-admission-v1");
+const admissionDomain = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address"], [REGISTRY_ADMISSION_TYPE, chainId, schemeRegistry, kyaRegistry]));
 
 // ---- assertion ----------------------------------------------------------------
 const issuerNonce = 0n;
@@ -40,14 +43,14 @@ const assertionId = ethers.keccak256(coder.encode(["bytes32", "bytes32", "addres
 const provedAssertionId = ethers.keccak256(coder.encode(["bytes32", "bytes32", "address", "uint256"], [subjectKey, schemeId, verifier, 0n]));
 
 // ---- ZK public inputs (kya-public-v1) -----------------------------------------
-const nullifier = ethers.keccak256(coder.encode(["bytes32", "bytes32", "uint64"], [proverKey, schemeId, 0n])); // H(secret, schemeId, epoch)
+const nullifier = ethers.keccak256(coder.encode(["bytes32", "bytes32", "bytes32", "uint64"], [proverKey, schemeId, admissionDomain, 0n])); // stands in for Poseidon(secret, schemeId, admissionDomain, epoch)
 const claimDigest = ethers.id("claims:jurisdiction=SG;capital>=1e6");
 const issuerSetRoot = ethers.id("issuer-set-root");
 const expiresAt = 1_900_000_000n;
 const epoch = 0n;
 const publicInputs = coder.encode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], [subjectKey, nullifier, 4, claimDigest, expiresAt, issuerSetRoot, epoch]);
 const split = (v) => [(BigInt(v) >> 128n).toString(), (BigInt(v) & ((1n << 128n) - 1n)).toString()];
-const groth16Signals = [...split(nullifier), ...split(subjectKey), "4", ...split(claimDigest), expiresAt.toString(), ...split(issuerSetRoot), ...split(schemeId), epoch.toString()];
+const groth16Signals = [...split(nullifier), ...split(subjectKey), "4", ...split(claimDigest), expiresAt.toString(), ...split(issuerSetRoot), ...split(schemeId), epoch.toString(), ...split(admissionDomain)];
 
 // ---- policy -------------------------------------------------------------------
 const policyDescriptor = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../assets/erc-kya/vectors/example-policy.json"), "utf8"));
@@ -63,7 +66,7 @@ const bridge = "0x7777777777777777777777777777777777777777";
 const trustedIssuers = [issuer];
 const responseMap = [0, 50, 100];
 const configHash = ethers.keccak256(coder.encode(["bytes32", "address[]", "uint8[]"], [schemeId, trustedIssuers, responseMap]));
-const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "bytes32", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identityRegistry, bridge, configHash, agentId, schemeId]));
+const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identityRegistry, bridge, agentId, schemeId]));
 const responseHash = ethers.keccak256(coder.encode(["bytes32", "uint8", "bytes32"], [assertionId, 2, configHash]));
 const tag = "kya:" + schemeId.slice(2);
 const metadataValue = coder.encode(["address", "bytes32[]"], [kyaRegistry, [schemeId]]);
@@ -120,9 +123,10 @@ const vectors = {
   subject: { chainId: chainId.toString(), identityRegistry, agentId: agentId.toString(), subjectType: SUBJECT_TYPES.erc8004, subjectData, subjectKey },
   scheme: { chainId: chainId.toString(), schemeRegistry, controller, schemeHash, nonce: schemeNonce.toString(), schemeId, schemeIdPreimage: "abi.encode(chainId, schemeRegistry, controller, schemeHash, nonce)", descriptorKeccak: "keccak256 of the raw bytes of example-scheme.json", binding: "controller (1)", bindingWitnessExample: { controller: "0x8888888888888888888888888888888888888888", witness: ethers.keccak256(coder.encode(["address"], ["0x8888888888888888888888888888888888888888"])) } },
   assertion: { issuer, issuerNonce: issuerNonce.toString(), assertionId, provedIssuer: verifier, provedAssertionId },
-  zk: { layout: "kya-public-v1", signalOrder: "[nullifier.hi, nullifier.lo, subjectKey.hi, subjectKey.lo, level, claimDigest.hi, claimDigest.lo, expiresAt, issuerSetRoot.hi, issuerSetRoot.lo, schemeId.hi, schemeId.lo, epoch]", proverSecret: proverKey, epoch: epoch.toString(), nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },
+  admission: { registryAdmissionType: REGISTRY_ADMISSION_TYPE, kyaRegistry, schemeRegistry, admissionDomain, preimage: "abi.encode(keccak256(\"erc-kya-registry-admission-v1\"), chainId, schemeRegistry, kyaRegistry)", note: "computed by the admitting KYA Registry from its own state and passed to IKYAVerifier.verify; proofs and nullifiers are scoped to it" },
+  zk: { layout: "kya-public-v1", signalOrder: "[nullifier.hi, nullifier.lo, subjectKey.hi, subjectKey.lo, level, claimDigest.hi, claimDigest.lo, expiresAt, issuerSetRoot.hi, issuerSetRoot.lo, schemeId.hi, schemeId.lo, epoch, admissionDomain.hi, admissionDomain.lo]", proverSecret: proverKey, epoch: epoch.toString(), nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },
   policy: { owner: policyOwner, policyHash, withoutRules: { nonce: "0", rulesHash: ethers.ZeroHash, policyId: policyIdNoRules }, withRules: { nonce: "1", projection, rulesHash, rulesHashPreimage: "abi.encode(Rule[] allOf)", policyId }, policyIdPreimage: "abi.encode(owner, policyHash, rulesHash, nonce)" },
-  bridge8004: { requestType: ethers.id("erc-kya-request-v1"), bridge, trustedIssuers, responseMap, configHash, configHashPreimage: "abi.encode(schemeId, trustedIssuers, responseMap)", requestHashPreimage: "abi.encode(requestType, chainId, identityRegistry, bridge, configHash, agentId, schemeId)", requestHash, responseHashExample: { assertionId, level: 2, responseHash }, responseHashPreimage: "abi.encode(assertionId, level, configHash)", tag, metadataKey: "kya", metadataValue },
+  bridge8004: { requestType: ethers.id("erc-kya-request-v1"), bridge, trustedIssuers, responseMap, configHash, configHashPreimage: "abi.encode(schemeId, trustedIssuers, responseMap)", requestHashPreimage: "abi.encode(requestType, chainId, identityRegistry, bridge, agentId, schemeId)", requestHash, responseHashExample: { assertionId, level: 2, responseHash }, responseHashPreimage: "abi.encode(assertionId, level, configHash)", tag, metadataKey: "kya", metadataValue },
   eip712: { domain, types, challenge, challengeHash, presentation, presentationHash, zkPresentation, zkPresentationHash, signer: wallet.address, presentationSignature },
   interfaceIds,
 };

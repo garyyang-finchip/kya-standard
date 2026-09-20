@@ -1,303 +1,335 @@
 {
-  "network": "sepolia",
-  "chainId": "11155111",
-  "revision": 3,
-  "runAt": "2026-09-20",
-  "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-  "agent": {
-    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
-    "agentId": "10387",
-    "registerTx": "0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de",
-    "block": 11736632,
-    "subjectKey": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0",
-    "note": "same ERC-8004 agent as revisions 1–2; owner = deployer, so the controller witness is keccak256(abi.encode(deployer))"
-  },
-  "steps": {
-    "registerSchemeAttested": {
-      "tx": "0xbe2d94541ed05f0ae655b7488a6089e72f0b169a85ea3365b5a23108b6a4b2f5",
-      "block": 11740832,
-      "gasUsed": 809124,
-      "nonce": 43,
-      "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-      "schemeIdPreimage": "abi.encode(chainId, KYASchemeRegistry, deployer, descriptorHash, 0)",
-      "descriptorHash": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
-      "binding": "CONTROLLER (1)",
-      "result": "ordered-level"
-    },
-    "registerSchemeProved": {
-      "tx": "0xda1d04f2a5a21f3216d97241e19d908e32af939b96866bab607a1162faceb9a8",
-      "block": 11740832,
-      "gasUsed": 1273921,
-      "nonce": 44,
-      "schemeId": "0x63fe9b9c75341680bbb485692e0dd011c0dcefe68b026307c48aa3cbf150e27c",
-      "descriptorHash": "0xafdefbb58891822fe879e9612682a7602450c7c7996188e0bd4722af80bd94af",
-      "binding": "CONTROLLER (1)",
-      "verifier": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
-      "verifierCodehashPinned": true,
-      "epochSeconds": 2592000,
-      "epochGrace": 1
-    },
-    "setMetadataKya": {
-      "tx": "0x1cdfbb7c1c9aa55a37f7ebc7a77c2f5c0e5c09d541d9e56314ae925035e0e724",
-      "block": 11740832,
-      "gasUsed": 60384,
-      "nonce": 45,
-      "key": "kya",
-      "value": "abi.encode(KYARegistry, [attestedScheme, provedScheme])"
-    },
-    "attest": {
-      "tx": "0x591d8d4e78664d904b8337a0f60cf5a1e795869b262aa0c3c092a78c2c6d0876",
-      "block": 11740837,
-      "gasUsed": 469598,
-      "nonce": 46,
-      "assertionId": "0xc5015eba43b4ebe93f5a549231d1ea3cf2970315e667463077400fbb2695b233",
-      "level": 2,
-      "issuer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-      "expiresAt": 1797637684,
-      "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
-      "verified": {
-        "bindingStatus": "SATISFIED (1)",
-        "resolve (complete)": 2,
-        "check(minLevel 2)": true
-      }
-    },
-    "attestWithProof": {
-      "tx": "0x7027a7e03064fe893fd566f4c7f38f298d5e3d7a8553aa4d603c25ff360673df",
-      "block": 11740837,
-      "gasUsed": 847288,
-      "nonce": 47,
-      "assertionId": "0x00fe16dd0cd5b3a0c0087f3d45cf6cda27858400808ac09be2c4cfd47c2d23e3",
-      "level": 4,
-      "issuer": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
-      "anchor": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
-      "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
-      "epoch": "690",
-      "nullifier": "0x0552d9e6a35129dfbef8598b83d2d1a1f7c8004a36a4562ada821cfaef8a70e3",
-      "publicInputs": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b00552d9e6a35129dfbef8598b83d2d1a1f7c8004a36a4562ada821cfaef8a70e30000000000000000000000000000000000000000000000000000000000000004a60eda95a8f3721d347b926dae30576e0d6cbd8b08010db4c12ceaaefad6b32d000000000000000000000000000000000000000000000000000000006b25c6341de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e800000000000000000000000000000000000000000000000000000000000002b2",
-      "proof": "0x2377d5294577cf4b6a0d7e79aebc2f0fc91c4e2f22796051e4bbfcb2d83b453d2b5678f697b8aa10eae6bf058e349cd05a061d94d81d04f8edf8367453e5968109a16e9c4d92591afa12b54ce1994425e1bbcfc8c47eb2d7491f5c588490d1e90fc3e83ba1e0886a656fe6a8d4d1dd93800232459b925261ecd9a32fc4df0efd2d98c372f3ec9d4ea97d52571ec8b7100f7ac137e008df0c96bb5954c16934321e496159a0d0e950949754c3ff125575a6dd5565281725cfd03ecc0ce420bd080d46ff7b68b97ce22506faaaff9cf7c61398d7a65f7c92eed5210cad092b8595235c03731718aba42b3104b9c80b0f4ddf5e59a08cd1c34c38318aa2bde2314a",
-      "publicSignals": [
-        "7076327877229983260016783444187206049",
-        "329357780210376073467302814969747894499",
-        "175852164723629593469623764714218549054",
-        "117855159209801022199005436383192820144",
-        "4",
-        "220728972878893122691038849918202566510",
-        "17844576396532501109572181257931371309",
-        "1797637684",
-        "39711533459011723055531477847338844803",
-        "40830941689831994963270280925314069992",
-        "132915571154129152427764802044774174737",
-        "256358946260975462580214153170899755644",
-        "690"
-      ],
-      "attestor": "kya-demo-issuer-bob (hidden on-chain)",
-      "verified": {
-        "check(minLevel 4, issuers=[adapter])": true,
-        "anchor == pinned issuerSetRoot": true
-      }
-    },
-    "policy": {
-      "tx": "0x98618cd84a6b02c9731cf58153b3cb535cb9edce411f8d54bb252322c91b66c1",
-      "block": 11740837,
-      "gasUsed": 986441,
-      "nonce": 48,
-      "policyId": "0xe9d31e2f702d2354fb78510bd01a1d2242d78c33973a3af3109f136094d078c1",
-      "policyIdPreimage": "abi.encode(deployer, policyHash, rulesHash, 0)",
-      "descriptorHash": "0x5cf0a34d62056034cf6cee31c633df3d9397e866768ed30f8c2953ee8d241f1c",
-      "rulesHash": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1",
-      "rules": "allOf[attested>=2 by deployer, proved>=4 by adapter]",
-      "verified": {
-        "getPolicy().rulesHash == rulesHash": true,
-        "evaluate": true
-      }
-    },
-    "bridgeConfigure": {
-      "tx": "0x1d123fa9c107d4c2a2e295f7670ff0e41a2e91f1ea4e0d48563c1826bb419333",
-      "block": 11740837,
-      "gasUsed": 178418,
-      "nonce": 49,
-      "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-      "trustedIssuers": [
-        "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
-      ],
-      "responseMap": [
-        0,
-        25,
-        60,
-        100
-      ],
-      "configHash": "0x46abfbe509b7cb9db008feccbaddf95aedc0aa3ee6486e183117958da7d71f16"
-    },
-    "validationRequest": {
-      "tx": "0x3ae75510207caadb09e2061cb132578b925a70eae871516ae297521c4d054051",
-      "block": 11740837,
-      "gasUsed": 213392,
-      "nonce": 50,
-      "requestHash": "0x2630e234308cd9a866a0af0fa69c7915c7a53264652b75722dd2ca7a80bbe4f0",
-      "preimage": "abi.encode(keccak256(\"erc-kya-request-v1\"), chainId, identityRegistry, bridge, configHash, agentId, schemeId)"
-    },
-    "bridgeSync": {
-      "tx": "0xc45f43ba441948f66e92eca3ba0a5be9a0a33dc61d28c6f267e072b3c7280c4c",
-      "block": 11740840,
-      "gasUsed": 366843,
-      "nonce": 51,
-      "response": 60,
-      "tag": "kya:952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-      "responseHash": "0x9390ed4728ffba15b5dcd5bc1e6409d4f6fa0bd9ae04f8ee6aadd8ce7b76cbda",
-      "responseHashPreimage": "abi.encode(assertionId, level, configHash)",
-      "verified": {
-        "getValidationStatus.response": 60,
-        "getValidationStatus.responseHash == expected": true,
-        "getSummary(agentId,[bridge],tag)": {
-          "count": 1,
-          "averageResponse": 60
-        }
-      }
-    }
-  },
-  "descriptors": {
-    "attested": {
-      "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
-      "name": "Controller Binding (attested) v1",
-      "description": "Issuer checked that the agent's endpoint and wallet are controlled by one operator.",
-      "version": "1.0.0",
-      "mode": "attested",
-      "binding": "controller",
-      "result": {
-        "kind": "ordered-level"
-      },
-      "dimensions": [
-        "controller-binding"
-      ],
-      "levels": {
-        "0": {
-          "label": "not verified",
-          "erc8004Response": 0
-        },
-        "1": {
-          "label": "self-asserted",
-          "erc8004Response": 25
-        },
-        "2": {
-          "label": "controller-linked",
-          "erc8004Response": 60
-        },
-        "3": {
-          "label": "independently verified",
-          "erc8004Response": 100
-        }
-      },
-      "evidenceKinds": [
-        "domain-proof",
-        "erc8004-validation"
-      ],
-      "issuerPolicy": {
-        "kind": "open"
-      }
-    },
-    "proved": {
-      "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
-      "name": "Accountable Operator (ZK) v1",
-      "description": "Proves, without disclosure, that a member of the pinned issuer set attested accountability for the agent.",
-      "version": "1.0.0",
-      "mode": "proved",
-      "binding": "controller",
-      "result": {
-        "kind": "ordered-level"
-      },
-      "dimensions": [
-        "accountability",
-        "compliance"
-      ],
-      "levels": {
-        "0": {
-          "label": "not verified",
-          "erc8004Response": 0
-        },
-        "4": {
-          "label": "accountable",
-          "erc8004Response": 100
-        }
-      },
-      "evidenceKinds": [
-        "zk-proof"
-      ],
-      "issuerPolicy": {
-        "kind": "verifier-only"
-      },
-      "circuit": {
-        "system": "groth16",
-        "vkHash": "0xd700e6c18b1d3286e0114b6d9fa16121b85e88318bc80e396936e02081bd001c",
-        "publicInputLayout": [
-          "subjectKey",
-          "nullifier",
-          "level",
-          "claimDigest",
-          "expiresAt",
-          "issuerSetRoot",
-          "epoch"
-        ],
-        "publicInputAbi": [
-          "bytes32",
-          "bytes32",
-          "uint8",
-          "bytes32",
-          "uint64",
-          "bytes32",
-          "uint64"
-        ],
-        "nullifierScope": "scheme-epoch",
-        "epochSeconds": 2592000,
-        "epochGrace": 1,
-        "issuerHiding": true,
-        "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
-        "credentialBinding": [
-          "subjectKey",
-          "schemeId",
-          "level",
-          "claimDigest",
-          "expiresAt",
-          "proverCommitment"
-        ]
-      }
-    },
-    "policy": {
-      "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1",
-      "name": "demo counterparty baseline",
-      "require": {
-        "allOf": [
-          {
-            "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-            "minLevel": 2,
-            "issuers": [
-              "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
-            ]
-          },
-          {
-            "schemeId": "0x63fe9b9c75341680bbb485692e0dd011c0dcefe68b026307c48aa3cbf150e27c",
-            "minLevel": 4,
-            "issuers": [
-              "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061"
-            ]
-          }
-        ]
-      },
-      "onchain": {
-        "evaluator": "eip155:11155111:0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf",
-        "rulesHash": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1",
-        "sufficient": true
-      }
-    },
-    "hashes": {
-      "attested": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
-      "proved": "0xafdefbb58891822fe879e9612682a7602450c7c7996188e0bd4722af80bd94af",
-      "policy": "0x5cf0a34d62056034cf6cee31c633df3d9397e866768ed30f8c2953ee8d241f1c",
-      "rules": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1"
-    }
-  },
-  "ownership": {
-    "bridgeOwner": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-    "schemeControllers": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-    "status": "pending transfer to maintainer address — see deployments/ownership.json when done"
+ "network": "sepolia",
+ "chainId": "11155111",
+ "revision": 4,
+ "runAt": "2026-09-20",
+ "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+ "agent": {
+  "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+  "agentId": "10387",
+  "registerTx": "0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de",
+  "block": 11736632,
+  "subjectKey": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0",
+  "note": "same ERC-8004 agent as revisions 1–2; owner = deployer, so the controller witness is keccak256(abi.encode(deployer))"
+ },
+ "admissionDomain": {
+  "value": "0x08521d808f4be9981a43305ef281fe53b7ecb9568196a9103038319fca5834f5",
+  "preimage": "abi.encode(keccak256(\"erc-kya-registry-admission-v1\"), chainId, KYASchemeRegistry, KYARegistry)",
+  "verified": {
+   "KYARegistry.admissionDomain() == offline": true,
+   "adapter.verify(provedScheme, thisDomain, publicInputs, proof).ok": true,
+   "adapter.verify(provedScheme, anotherRegistry's domain, same publicInputs, same proof).ok": false
   }
+ },
+ "steps": {
+  "registerSchemeAttested": {
+   "tx": "0x4846d9a45a3f8bf36ceaa046ff8608beb54d460a5c565f60561a656d12bc7aa3",
+   "block": 11744775,
+   "gasUsed": 809124,
+   "nonce": 75,
+   "schemeId": "0x1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd",
+   "schemeIdPreimage": "abi.encode(chainId, KYASchemeRegistry, deployer, descriptorHash, 0)",
+   "descriptorHash": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
+   "binding": "CONTROLLER (1)",
+   "result": "ordered-level"
+  },
+  "registerSchemeProved": {
+   "tx": "0x23f7a96e81e9303de3a964fa55b1c8c195ae03bbda0698b89a46c18f25d335a4",
+   "block": 11744776,
+   "gasUsed": 1319792,
+   "nonce": 76,
+   "schemeId": "0xe8b5ebea4a171970b3d596228e53b95736e44032fcf766b5505e742379031a14",
+   "descriptorHash": "0xf8373cffe6b46db13363c0fbdf27ad8e9413a845bbf42df5881b7bdef622f6f7",
+   "binding": "CONTROLLER (1)",
+   "verifier": "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7",
+   "verifierCodehashPinned": true,
+   "epochSeconds": 2592000,
+   "epochGrace": 1,
+   "proofBinding": [
+    "schemeId",
+    "admissionDomain"
+   ]
+  },
+  "setMetadataKya": {
+   "tx": "0x1ea72463cebc89ed03f3f00b88becb74fa51ff4d0aa870a0ecd5c71684b010f6",
+   "block": 11744776,
+   "gasUsed": 60384,
+   "nonce": 77,
+   "key": "kya",
+   "value": "abi.encode(KYARegistry, [attestedScheme, provedScheme])"
+  },
+  "attest": {
+   "tx": "0x1b22ffafe965564ec3e8fe7996f8a9fc031440ca026326a2892622d4adf27029",
+   "block": 11744779,
+   "gasUsed": 469598,
+   "nonce": 78,
+   "assertionId": "0x048817ae096330416ef8ec39999506efe29a11b9139a271238fceb4112ce19ce",
+   "level": 2,
+   "issuer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+   "expiresAt": 1797689614,
+   "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
+   "verified": {
+    "resolve (complete)": 2,
+    "check(minLevel 2)": true
+   }
+  },
+  "attestWithProof": {
+   "tx": "0x0fe2b0c21d98e170405a3d9d9b6621441260e5b45fde7eb31a2b2fbff36da324",
+   "block": 11744780,
+   "gasUsed": 865649,
+   "nonce": 79,
+   "assertionId": "0x559090e300adf8cd2bfc0c4fe4a346421801fa4fb547c028d91021c6ad84f2f5",
+   "level": 4,
+   "issuer": "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7",
+   "anchor": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+   "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
+   "epoch": "690",
+   "admissionDomain": "0x08521d808f4be9981a43305ef281fe53b7ecb9568196a9103038319fca5834f5",
+   "nullifier": "0x194b18727292c390e0d6d3079f049f2a86a6a72f9d74f5ee63fb43f37569afc0",
+   "nullifierPreimage": "Poseidon(secret, schemeId.hi, .lo, admissionDomain.hi, .lo, epoch)",
+   "publicInputs": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0194b18727292c390e0d6d3079f049f2a86a6a72f9d74f5ee63fb43f37569afc00000000000000000000000000000000000000000000000000000000000000004a60eda95a8f3721d347b926dae30576e0d6cbd8b08010db4c12ceaaefad6b32d000000000000000000000000000000000000000000000000000000006b26910e1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e800000000000000000000000000000000000000000000000000000000000002b2",
+   "proof": "0x1b09824945df75fd7e03955b03c6e26b0910aec33810cf4bacef142b8921430e1aee0f928e2ff8e0b5a7aee91481475b9b501096454981eeb82d8c100cd1d8bd117548308dd6ec7560382444329d192bab27e5a8c45b86ff929d7f087dae3a2303aba198d305080842a5bbaf83aaa2f7ce5761b03ec2e2482ac27ceb57e9881b0bfbc99d0ddf9f032af03199924e2c80223e8c6f9df297eef25fe10aab78e6a912a8e030eb15dada4e12b7ec98fc97ca520a600a8603330879f06de27b5540bb02aa331d659d3717b67838cdff880d9d266ded3a6008da90fdc4a5f1fff7bf370d26d5a3e030ecebc4d13ea5d165d8d187939eb21630d0ab4ddf2b132ac29d17",
+   "publicSignals": [
+    "33620618004312740984253372758063619882",
+    "178981863648553499669175166677589536704",
+    "175852164723629593469623764714218549054",
+    "117855159209801022199005436383192820144",
+    "4",
+    "220728972878893122691038849918202566510",
+    "17844576396532501109572181257931371309",
+    "1797689614",
+    "39711533459011723055531477847338844803",
+    "40830941689831994963270280925314069992",
+    "309325485682071988953638390445206911319",
+    "72963457570043469434691441356066462228",
+    "690",
+    "11060190684110619531158922924864437843",
+    "244477864386758179365945152517243942133"
+   ],
+   "attestor": "kya-demo-issuer-bob (hidden on-chain)",
+   "verified": {
+    "resolve (complete)": 4,
+    "check(minLevel 4, issuers=[adapter])": true,
+    "isNullifierUsed": true,
+    "anchor == pinned issuerSetRoot": true
+   }
+  },
+  "policy": {
+   "tx": "0x06276a41a5c6c2e49561b2bd4368e3179d83c513e2de0fc93ee55ffca44e42cb",
+   "block": 11744796,
+   "gasUsed": 986441,
+   "nonce": 80,
+   "policyId": "0x5f278660dbeedbdb5c00362f413696f9d7aece03338a4a636df9eb6a21dfd0e4",
+   "policyIdPreimage": "abi.encode(deployer, policyHash, rulesHash, 0)",
+   "descriptorHash": "0x59b016088ffce8e9eb5dc56a2a5d0fe57d83e57f53af782aaec06ccbec1b7ec7",
+   "rulesHash": "0xf42518dd2f84b8ca165c59eae9622703cb4276bbe7cb7d179f48d774af36de14",
+   "rules": "allOf[attested>=2 by deployer, proved>=4 by adapter]",
+   "verified": {
+    "getPolicy().rulesHash == rulesHash": true,
+    "evaluate": true
+   }
+  },
+  "bridgeConfigure": {
+   "tx": "0xc53af4d4adc3ea167dafce121b15402bac54163cb64dc5a03a90a70605465569",
+   "block": 11744796,
+   "gasUsed": 178418,
+   "nonce": 81,
+   "schemeId": "0x1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd",
+   "trustedIssuers": [
+    "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+   ],
+   "responseMap": [
+    0,
+    25,
+    60,
+    100
+   ],
+   "configHash": "0x6df3c3011ca7750e35f918d955a2f572279657647ccbfdfb90c7da76e372de6e",
+   "verified": {
+    "getSchemeConfig().configHash == expected": true
+   }
+  },
+  "validationRequest": {
+   "tx": "0x7c1bee4c7dd485bded377a8eeb97d21b99c289a4998b2ed05661d5b7aa6d7e28",
+   "block": 11744796,
+   "gasUsed": 210937,
+   "nonce": 82,
+   "requestHash": "0xd4a5e030c6df9477f240d990d17370037e81a7b2bdb13321fc1a816093082b10",
+   "preimage": "abi.encode(keccak256(\"erc-kya-request-v1\"), chainId, identityRegistry, bridge, agentId, schemeId)",
+   "note": "stable continuing mirror of (bridge, agent, scheme); the committed payload is this ABI encoding, requestURI JSON is a readable copy; verified requestHashFor() on-chain == offline"
+  },
+  "bridgeSync": {
+   "tx": "0xbf0943984aa50aaca3e5c32ffaddd8e92f470024582a52747eb81ae4f7b11702",
+   "block": 11744807,
+   "gasUsed": 366510,
+   "nonce": 83,
+   "response": 60,
+   "tag": "kya:1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd",
+   "responseHash": "0x612acd15263a5e77439f36d1f8d73dd2e61251779adecd6313ef1502d2406f77",
+   "responseHashPreimage": "abi.encode(assertionId, level, configHash)",
+   "verified": {
+    "getValidationStatus.response": 60,
+    "getValidationStatus.responseHash == expected": true,
+    "getSummary(agentId,[bridge],tag)": {
+     "count": 1,
+     "averageResponse": 60
+    }
+   }
+  }
+ },
+ "interfaceIds": {
+  "IKYASchemeRegistry": "0x50cb46d8 (supportsInterface true on-chain)",
+  "IKYARegistry": "0xed494331 (supportsInterface true on-chain)",
+  "IKYAVerifier": "0xfc2b4271"
+ },
+ "descriptors": {
+  "attested": {
+   "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
+   "name": "Controller Binding (attested) v1",
+   "description": "Issuer checked that the agent's endpoint and wallet are controlled by one operator.",
+   "version": "1.0.0",
+   "mode": "attested",
+   "binding": "controller",
+   "result": {
+    "kind": "ordered-level"
+   },
+   "dimensions": [
+    "controller-binding"
+   ],
+   "levels": {
+    "0": {
+     "label": "not verified",
+     "erc8004Response": 0
+    },
+    "1": {
+     "label": "self-asserted",
+     "erc8004Response": 25
+    },
+    "2": {
+     "label": "controller-linked",
+     "erc8004Response": 60
+    },
+    "3": {
+     "label": "independently verified",
+     "erc8004Response": 100
+    }
+   },
+   "evidenceKinds": [
+    "domain-proof",
+    "erc8004-validation"
+   ],
+   "issuerPolicy": {
+    "kind": "open"
+   }
+  },
+  "proved": {
+   "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
+   "name": "Accountable Operator (ZK) v1",
+   "description": "Proves, without disclosure, that a member of the pinned issuer set attested accountability for the agent.",
+   "version": "1.0.0",
+   "mode": "proved",
+   "binding": "controller",
+   "result": {
+    "kind": "ordered-level"
+   },
+   "dimensions": [
+    "accountability",
+    "compliance"
+   ],
+   "levels": {
+    "0": {
+     "label": "not verified",
+     "erc8004Response": 0
+    },
+    "4": {
+     "label": "accountable",
+     "erc8004Response": 100
+    }
+   },
+   "evidenceKinds": [
+    "zk-proof"
+   ],
+   "issuerPolicy": {
+    "kind": "verifier-only"
+   },
+   "circuit": {
+    "system": "groth16",
+    "vkHash": "0x7c0e948ac0d39a9f4cd1b006b4fb3984ff7b1acc24eeb1380767c2996ac3be07",
+    "publicInputLayout": [
+     "subjectKey",
+     "nullifier",
+     "level",
+     "claimDigest",
+     "expiresAt",
+     "issuerSetRoot",
+     "epoch"
+    ],
+    "publicInputAbi": [
+     "bytes32",
+     "bytes32",
+     "uint8",
+     "bytes32",
+     "uint64",
+     "bytes32",
+     "uint64"
+    ],
+    "nullifierScope": "scheme-epoch",
+    "proofBinding": [
+     "schemeId",
+     "admissionDomain"
+    ],
+    "epochSeconds": 2592000,
+    "epochGrace": 1,
+    "issuerHiding": true,
+    "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+    "credentialBinding": [
+     "subjectKey",
+     "schemeId",
+     "level",
+     "claimDigest",
+     "expiresAt",
+     "proverCommitment"
+    ]
+   }
+  },
+  "policy": {
+   "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1",
+   "name": "demo counterparty baseline",
+   "require": {
+    "allOf": [
+     {
+      "schemeId": "0x1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd",
+      "minLevel": 2,
+      "issuers": [
+       "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+      ]
+     },
+     {
+      "schemeId": "0xe8b5ebea4a171970b3d596228e53b95736e44032fcf766b5505e742379031a14",
+      "minLevel": 4,
+      "issuers": [
+       "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7"
+      ]
+     }
+    ]
+   },
+   "onchain": {
+    "evaluator": "eip155:11155111:0x4689d5569Af043920A6F939A72589C9350437845",
+    "rulesHash": "0xf42518dd2f84b8ca165c59eae9622703cb4276bbe7cb7d179f48d774af36de14",
+    "sufficient": true
+   }
+  },
+  "hashes": {
+   "attested": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
+   "proved": "0xf8373cffe6b46db13363c0fbdf27ad8e9413a845bbf42df5881b7bdef622f6f7",
+   "policy": "0x59b016088ffce8e9eb5dc56a2a5d0fe57d83e57f53af782aaec06ccbec1b7ec7",
+   "rules": "0xf42518dd2f84b8ca165c59eae9622703cb4276bbe7cb7d179f48d774af36de14"
+  }
+ },
+ "ownership": {
+  "bridgeOwner": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+  "schemeControllers": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+  "status": "pending transfer to maintainer address — see deployments/ownership.json when done"
+ },
+ "feeNote": "nonces 80–83 were re-broadcast at 1.5 gwei after the 4 gwei originals were dropped by the RPC node on balance grounds; the 4 gwei originals of 81 and 82 were the ones eventually mined"
 }

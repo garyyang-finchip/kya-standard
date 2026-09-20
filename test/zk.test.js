@@ -32,6 +32,9 @@ async function test(name, fn) {
   const EPOCH_LEN = 86_400n, GRACE = 1n;
   const adapter = await h.deploy("Groth16KYAVerifierAdapter", [g16.addr, set.rootHex, EPOCH_LEN, GRACE]);
   const epochNow = () => zk.epochFor(h.timestamp, EPOCH_LEN);
+  // the admission domain registry A computes for itself; the prover must reproduce it exactly
+  const DOM = await kya.call("admissionDomain");
+  assert.equal(DOM, zk.admissionDomain(1n, schemes.addr, kya.addr));
 
   const { result: schemeId } = await schemes.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0 /* IDENTITY: subject is a foreign-chain agent in this test */, adapter.addr, ethers.ZeroHash], "issuerA");
   // a second PROVED scheme sharing the SAME verifier and issuer set (cross-scheme replay target)
@@ -41,27 +44,27 @@ async function test(name, fn) {
   const subjectKey = subjectKeyOf(subj);
   const claim = { subjectKey, schemeId, level: 4, claimDigest: ethers.id("claims:jurisdiction=SG;capital>=1e6"), expiresAt: 1_900_000_000 };
 
-  console.log("\nZK-KYA companion (Groth16, kya-public-v1 rev 2, depth-16 issuer set, 1-day epochs)\n");
+  console.log("\nZK-KYA companion (Groth16, kya-public-v1 circuit rev 3, depth-16 issuer set, 1-day epochs)\n");
 
   let first;
   await test("attestor Bob signs a scheme-bound credential; prover builds a Groth16 proof for the current epoch", async () => {
     const secret = zk.randomSecret();
     const sig = zk.attest(attestors[1], claim, secret);
     const epoch = epochNow();
-    first = await zk.prove({ ...claim, epoch, secret, attestor: attestors[1], sig, set });
+    first = await zk.prove({ admissionDomain: DOM, ...claim, epoch, secret, attestor: attestors[1], sig, set });
     first.secret = secret; first.sig = sig; first.epoch = epoch;
     assert.equal(await zk.verifyLocally(first.publicSignals, first.rawProof), true);
-    assert.equal(first.nullifier, ethers.toBeHex(zk.nullifier(secret, schemeId, epoch), 32));
+    assert.equal(first.nullifier, ethers.toBeHex(zk.nullifier(secret, schemeId, DOM, epoch), 32));
   });
 
   await test("on-chain: adapter.verify returns ok with fields; signal vector matches snarkjs order", async () => {
-    const r = await adapter.call("verify", [schemeId, first.publicInputs, first.proof]);
+    const r = await adapter.call("verify", [schemeId, DOM, first.publicInputs, first.proof]);
     assert.equal(r.ok, true);
     assert.equal(r.subjectKey, subjectKey);
     assert.equal(r.nullifier, first.nullifier);
     assert.equal(Number(r.level), 4);
     assert.equal(r.anchor, set.rootHex);
-    const sig = await adapter.call("signals", [schemeId, coder.decode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], first.publicInputs)]);
+    const sig = await adapter.call("signals", [schemeId, DOM, coder.decode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], first.publicInputs)]);
     assert.deepEqual(sig.map(String), first.publicSignals.map(String));
   });
 
@@ -83,13 +86,13 @@ async function test(name, fn) {
   });
 
   await test("prover-chosen future epoch is rejected on-chain even though the proof is valid", async () => {
-    const p = await zk.prove({ ...claim, epoch: first.epoch + 1n, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
+    const p = await zk.prove({ admissionDomain: DOM, ...claim, epoch: first.epoch + 1n, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
     assert.equal(await zk.verifyLocally(p.publicSignals, p.rawProof), true);
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, p.publicInputs, p.proof, ""], "relayer"), "EpochOutOfWindow");
   });
 
   await test("epoch older than the grace window is rejected", async () => {
-    const p = await zk.prove({ ...claim, epoch: first.epoch - 2n, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
+    const p = await zk.prove({ admissionDomain: DOM, ...claim, epoch: first.epoch - 2n, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, p.publicInputs, p.proof, ""], "relayer"), "EpochOutOfWindow");
   });
 
@@ -98,14 +101,14 @@ async function test(name, fn) {
     const epoch = epochNow();
     assert.equal(epoch, first.epoch + 1n);
     assert.equal(await adapter.call("currentEpoch"), epoch);
-    const p = await zk.prove({ ...claim, epoch, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
+    const p = await zk.prove({ admissionDomain: DOM, ...claim, epoch, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
     assert.notEqual(p.nullifier, first.nullifier);
     const { result: id } = await kya.send("attestWithProof", [subj, schemeId, p.publicInputs, p.proof, ""], "relayer");
     assert.equal(Number((await kya.call("getAssertion", [id])).level), 4);
     // the previous epoch's proof is still inside the grace window but its nullifier is consumed
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, first.publicInputs, first.proof, ""], "relayer"), "KYA_NullifierUsed");
     // re-proving in the same epoch again is a replay
-    const again = await zk.prove({ ...claim, epoch, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
+    const again = await zk.prove({ admissionDomain: DOM, ...claim, epoch, secret: first.secret, attestor: attestors[1], sig: first.sig, set });
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, again.publicInputs, again.proof, ""], "relayer"), "KYA_NullifierUsed");
   });
 
@@ -113,13 +116,13 @@ async function test(name, fn) {
     // the prover feeds schemeB into the circuit while holding Bob's signature over schemeA → witness generation must fail
     let threw = false;
     try {
-      await zk.prove({ ...claim, schemeId: schemeB, epoch: epochNow(), secret: first.secret, attestor: attestors[1], sig: first.sig, set });
+      await zk.prove({ admissionDomain: DOM, ...claim, schemeId: schemeB, epoch: epochNow(), secret: first.secret, attestor: attestors[1], sig: first.sig, set });
     } catch (e) { threw = true; }
     assert.ok(threw, "circuit accepted a signature over a different schemeId");
     // and a valid scheme-A proof presented on-chain under scheme B fails verification (schemeId is a public signal)
     const fresh = zk.randomSecret();
     const sigA = zk.attest(attestors[1], claim, fresh);
-    const pa = await zk.prove({ ...claim, epoch: epochNow(), secret: fresh, attestor: attestors[1], sig: sigA, set });
+    const pa = await zk.prove({ admissionDomain: DOM, ...claim, epoch: epochNow(), secret: fresh, attestor: attestors[1], sig: sigA, set });
     await expectRevert(kya.send("attestWithProof", [subj, schemeB, pa.publicInputs, pa.proof, ""], "relayer"), "KYA_VerifierRejected");
   });
 
@@ -127,7 +130,7 @@ async function test(name, fn) {
     const secret = zk.randomSecret();
     const claimB = { ...claim, schemeId: schemeB, level: 2 };
     const sig = zk.attest(attestors[1], claimB, secret);
-    const p = await zk.prove({ ...claimB, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
+    const p = await zk.prove({ admissionDomain: DOM, ...claimB, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
     const { result: id } = await kya.send("attestWithProof", [subj, schemeB, p.publicInputs, p.proof, ""], "relayer");
     assert.equal(Number((await kya.call("getAssertion", [id])).level), 2);
   });
@@ -161,7 +164,7 @@ async function test(name, fn) {
     const src = fs.readFileSync(path.join(__dirname, "../companions/zk-kya-groth16/circuits/kya_public_v1.circom"), "utf8");
     assert.ok(/Num2Bits_strict\(\)/.test(src) && !/Num2Bits\(254\)/.test(src), "Split128 must use Num2Bits_strict");
     const dec = coder.decode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], first.publicInputs);
-    const sig = (await adapter.call("signals", [schemeId, dec])).map(String);
+    const sig = (await adapter.call("signals", [schemeId, DOM, dec])).map(String);
     const P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
     for (const [hiIdx, loIdx] of [[0, 1], [8, 9]]) {
       const v = (BigInt(sig[hiIdx]) << 128n) | BigInt(sig[loIdx]);
@@ -177,25 +180,72 @@ async function test(name, fn) {
     const set2 = zk.issuerSet([mallory.pub]);
     const secret = zk.randomSecret();
     const sig = zk.attest(mallory, claim, secret);
-    const p = await zk.prove({ ...claim, epoch: epochNow(), secret, attestor: mallory, sig, set: set2 });
+    const p = await zk.prove({ admissionDomain: DOM, ...claim, epoch: epochNow(), secret, attestor: mallory, sig, set: set2 });
     // proof is valid for set2's root, but the adapter pins the real issuer set root
     assert.equal(await zk.verifyLocally(p.publicSignals, p.rawProof), true);
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, p.publicInputs, p.proof, ""], "relayer"), "IssuerSetRootMismatch");
   });
 
-  await test("cross-registry replay: a proof for registry A's scheme cannot be admitted by registry B even with the same controller/descriptor/verifier", async () => {
+  await test("admission domain (a): one SchemeRegistry, two KYARegistries A and B — the proof A admitted is refused by B, and a proof made for B is refused by A BEFORE either has been consumed", async () => {
+    const kyaB = await h.deploy("KYARegistry", [schemes.addr]);   // same catalogue, same schemeId, same verifier
+    const DOM_B = await kyaB.call("admissionDomain");
+    assert.notEqual(DOM_B, DOM);
+    // (1) A's already-admitted proof, replayed at B: rejected by the verifier (domain is a public signal), not by a nullifier
+    assert.equal(await kyaB.call("isNullifierUsed", [schemeId, first.nullifier]), false);
+    await expectRevert(kyaB.send("attestWithProof", [subj, schemeId, first.publicInputs, first.proof, ""], "relayer"), "KYA_VerifierRejected");
+    // (2) a FRESH proof made for B, first submitted to A (nothing consumed anywhere): rejected at A for the same reason
+    const secret = zk.randomSecret();
+    const sig = zk.attest(attestors[1], claim, secret);                 // the credential names no registry
+    const pB = await zk.prove({ ...claim, admissionDomain: DOM_B, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
+    assert.equal(await zk.verifyLocally(pB.publicSignals, pB.rawProof), true);
+    assert.equal(await kya.call("isNullifierUsed", [schemeId, pB.nullifier]), false);
+    await expectRevert(kya.send("attestWithProof", [subj, schemeId, pB.publicInputs, pB.proof, ""], "relayer"), "KYA_VerifierRejected");
+    // (3) the same proof at B: admitted; its nullifier is consumed in B's scope only
+    const { result: idB } = await kyaB.send("attestWithProof", [subj, schemeId, pB.publicInputs, pB.proof, ""], "relayer");
+    assert.equal(Number((await kyaB.call("getAssertion", [idB])).level), 4);
+    assert.equal(await kyaB.call("isNullifierUsed", [schemeId, pB.nullifier]), true);
+    assert.equal(await kya.call("isNullifierUsed", [schemeId, pB.nullifier]), false);
+    // (4) repeat at B: nullifier rule, and re-randomising the proof does not help
+    const pB2 = await zk.prove({ ...claim, admissionDomain: DOM_B, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
+    assert.notEqual(pB2.proof, pB.proof); assert.equal(pB2.nullifier, pB.nullifier);
+    await expectRevert(kyaB.send("attestWithProof", [subj, schemeId, pB2.publicInputs, pB2.proof, ""], "relayer"), "KYA_NullifierUsed");
+    // (5) the SAME credential (same secret, same signature) re-proved for A: admitted at A with an A-scoped nullifier —
+    //     domain separation is per-proof, not "one credential, one use anywhere"
+    const pA = await zk.prove({ ...claim, admissionDomain: DOM, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
+    assert.notEqual(pA.nullifier, pB.nullifier);
+    const { result: idA } = await kya.send("attestWithProof", [subj, schemeId, pA.publicInputs, pA.proof, ""], "relayer");
+    assert.equal(Number((await kya.call("getAssertion", [idA])).level), 4);
+  });
+
+  await test("admission domain (b): the domain is not a label the submitter can rewrite — a proof for B presented to A with B's domain spliced into the signal vector is rejected", async () => {
+    const kyaB = await h.deploy("KYARegistry", [schemes.addr]);
+    const DOM_B = await kyaB.call("admissionDomain");
+    const secret = zk.randomSecret();
+    const sig = zk.attest(attestors[1], claim, secret);
+    const pB = await zk.prove({ ...claim, admissionDomain: DOM_B, epoch: epochNow(), secret, attestor: attestors[1], sig, set });
+    // the adapter itself, asked to verify under A's domain, says no; under B's domain, yes — and A never asks with anything but its own
+    assert.equal((await adapter.call("verify", [schemeId, DOM, pB.publicInputs, pB.proof])).ok, false);
+    assert.equal((await adapter.call("verify", [schemeId, DOM_B, pB.publicInputs, pB.proof])).ok, true);
+    // signal vector: swapping only the domain limbs of a valid vector breaks verification (the nullifier output depends on them)
+    const dec = coder.decode(["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], pB.publicInputs);
+    const sigB = (await adapter.call("signals", [schemeId, DOM_B, dec])).map(String);
+    const sigA = (await adapter.call("signals", [schemeId, DOM, dec])).map(String);
+    assert.deepEqual(sigB.slice(0, 13), sigA.slice(0, 13)); assert.notDeepEqual(sigB.slice(13), sigA.slice(13));
+    assert.equal(await zk.verifyLocally(sigB, pB.rawProof), true);
+    assert.equal(await zk.verifyLocally(sigA, pB.rawProof), false);
+  });
+
+  await test("scheme-registry domain (kept from rev3): a second SchemeRegistry yields a different schemeId for the same controller/descriptor/verifier, and A's credential is not provable under it", async () => {
     const schemesB = await h.deploy("KYASchemeRegistry");
     const kyaB = await h.deploy("KYARegistry", [schemesB.addr]);
-    // same controller, same descriptor hash, same verifier — but schemeId embeds (chainId, registry)
     const { result: idB } = await schemesB.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerA");
     assert.notEqual(idB, schemeId);
-    // Bob's credential and proof were made for registry A's schemeId; registry B feeds ITS schemeId as the public signal
+    const DOM_B = await kyaB.call("admissionDomain");
+    // Bob's credential names registry A's schemeId; registry B feeds ITS schemeId (and its domain) as public signals
     const fresh = zk.randomSecret();
-    const sig = zk.attest(attestors[1], claim, fresh); // claim.schemeId === registry A's id
-    const p = await zk.prove({ ...claim, epoch: epochNow(), secret: fresh, attestor: attestors[1], sig, set });
-    assert.equal(await zk.verifyLocally(p.publicSignals, p.rawProof), true);
+    const sig = zk.attest(attestors[1], claim, fresh);
+    const p = await zk.prove({ ...claim, admissionDomain: DOM_B, epoch: epochNow(), secret: fresh, attestor: attestors[1], sig, set });
     await expectRevert(kyaB.send("attestWithProof", [subj, idB, p.publicInputs, p.proof, ""], "relayer"), "KYA_VerifierRejected");
-    // nullifier scopes are therefore disjoint by construction, not by accident
     assert.equal(await kyaB.call("isNullifierUsed", [idB, p.nullifier]), false);
   });
 

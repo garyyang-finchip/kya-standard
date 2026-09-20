@@ -64,7 +64,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
     evidenceKinds: ["zk-proof"], issuerPolicy: { kind: "verifier-only" },
     circuit: { system: "groth16", vkHash: ethers.keccak256(Buffer.from(JSON.stringify(require("../companions/zk-kya-groth16/build/verification_key.json")))),
       publicInputLayout: ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot", "epoch"],
-      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch",
+      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch", proofBinding: ["schemeId", "admissionDomain"],
       epochSeconds: dep.adapterConfig.epochSeconds, epochGrace: dep.adapterConfig.epochGrace, issuerHiding: true, issuerSetRoot: dep.adapterConfig.issuerSetRoot,
       credentialBinding: ["subjectKey", "schemeId", "level", "claimDigest", "expiresAt", "proverCommitment"] },
   };
@@ -98,7 +98,8 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   const epoch = await adapter.currentEpoch();          // enforced on-chain from block.timestamp
   process.stdout.write(`  proving (epoch ${epoch}) …`);
   const t0 = Date.now();
-  const pr = await zk.prove({ ...claim, epoch, secret, attestor: attestors[1], sig, set });
+  const admissionDomain = zk.admissionDomain(net.chainId, dep.contracts.KYASchemeRegistry.address, dep.contracts.KYARegistry.address);
+  const pr = await zk.prove({ ...claim, epoch, admissionDomain, secret, attestor: attestors[1], sig, set });
   console.log(` ${((Date.now() - t0) / 1000).toFixed(1)}s  nullifier ${pr.nullifier}`);
   const v = await adapter.verify(provedScheme, pr.publicInputs, pr.proof);
   console.log(`  adapter.verify → ok=${v.ok} level=${v.level}`);
@@ -123,7 +124,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   rc = await sendAndWait("bridge.configureScheme", bridge.configureScheme(attestedScheme, [wallet.address], [0, 25, 60, 100]));
   const cfgTx = rc.hash;
   const requestHash = await bridge.requestHashFor(agentId, attestedScheme);
-  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: dep.contracts.KYABridge8004.address, configHash: (await bridge.getSchemeConfig(attestedScheme))[2], agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
+  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: dep.contracts.KYABridge8004.address, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
   const reqTx = rc.hash;
   rc = await sendAndWait("bridge.sync", bridge.sync(agentId, attestedScheme));
   const st = await validation.getValidationStatus(requestHash);

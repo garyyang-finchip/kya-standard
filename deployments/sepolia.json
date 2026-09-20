@@ -1,10 +1,10 @@
 {
   "network": "sepolia",
   "chainId": "11155111",
-  "revision": 3,
+  "revision": 4,
   "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
   "deployedAt": "2026-09-20",
-  "note": "Revision 3 (after the second external review): schemeId embeds chainId + registry; binding kind on-chain with issuance witness and complete/registry-local resolution; verifier code-hash pinning; policyId commits rulesHash; bridge configHash in request/response provenance and full-schemeId tag. Circuit unchanged from revision 2 (Groth16Verifier bytecode identical, redeployed for a self-contained stack). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
+  "note": "Revision 4 (second review round, \"Admission Domain + Continuous Mirror\"): schemeId is the RULE identity (rev3 formula, chainId + scheme registry); every admitted proof is bound to an admissionDomain = H(keccak256(\"erc-kya-registry-admission-v1\"), chainId, schemeRegistry, kyaRegistry) that the KYARegistry computes for itself and passes to IKYAVerifier.verify; circuit rev 3 takes it as a public input (15 signals) and folds it into the nullifier, so a proof made for one registry is not admissible at another while the same credential can be re-proved elsewhere. Bridge: configHash committed in responseHash only; requestHash is the stable continuing mirror of (bridge, agent, scheme). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
   "erc8004": {
     "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
     "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
@@ -12,71 +12,71 @@
   },
   "contracts": {
     "KYASchemeRegistry": {
-      "address": "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75",
-      "tx": "0x3302fcf427033f17527e38e76de42c4daa57b490ba413f014d3c101c5f8bacb5",
-      "block": 11740808,
+      "address": "0x946F20056944640ECf2Af2C05D71ec384AFA4d5D",
+      "tx": "0xacc932d0ae82d8a9cef217c7f0bcbe64e833284a5a1ce295befdfae0cbb8693d",
+      "block": 11744752,
       "gasUsed": 819879,
-      "nonce": 36,
+      "nonce": 68,
       "args": []
     },
     "KYARegistry": {
-      "address": "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
-      "tx": "0x139724609b04675f888d00c48bb0c481dbd729234c2fe3c3a1975f6278ebf3d4",
-      "block": 11740808,
-      "gasUsed": 1849968,
-      "nonce": 37,
+      "address": "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb",
+      "tx": "0x44aa0ae7842ca0f0d11b83f95c9d253dafe87b92fef6fefade5180d9706c3791",
+      "block": 11744752,
+      "gasUsed": 1899936,
+      "nonce": 69,
       "args": [
-        "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75"
+        "0x946F20056944640ECf2Af2C05D71ec384AFA4d5D"
       ]
     },
     "KYAPolicyRegistry": {
-      "address": "0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf",
-      "tx": "0xb98fc0f99a844650b640a985e2e8f5ad1bae5cffa56c805c6089afe9e6ab2133",
-      "block": 11740808,
+      "address": "0x4689d5569Af043920A6F939A72589C9350437845",
+      "tx": "0xa5c676fe62510f5a90c8782e5866ddb6312cb5dbdf187fd4076db35c1a16ff9a",
+      "block": 11744752,
       "gasUsed": 988029,
-      "nonce": 38,
+      "nonce": 70,
       "args": [
-        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f"
+        "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb"
       ]
     },
     "ValidationRegistry8004": {
-      "address": "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
-      "tx": "0xbd6e780f075fd6c4b40f16b9567639f57f9ee7ef49c99269a37f2a6291eca593",
-      "block": 11740808,
+      "address": "0x032D4aCa0F86707c9d331C11A382E6989CFE8aB9",
+      "tx": "0x14f7e9f71e8dd07094daf5bdbcab116b801cbc4e238c54023f36db6f9d8a7f23",
+      "block": 11744753,
       "gasUsed": 984956,
-      "nonce": 39,
+      "nonce": 71,
       "args": [
         "0x8004A818BFB912233c491871b3d84c89A494BD9e"
       ]
     },
     "KYABridge8004": {
-      "address": "0x4965e40900CBE94293dC43846C289eE2E13c32E9",
-      "tx": "0xaba842d05bc746463772167f4aed47b6c7d27fd78511dd63f6a55f8477739ec7",
-      "block": 11740812,
-      "gasUsed": 1296232,
-      "nonce": 40,
+      "address": "0x9079bb07698e1045EAc13e531B9AdBe1a7cDB261",
+      "tx": "0xd9c5a14d44d23e1b6976bdde22343817cadb04e56bd6ab2aea226c331f35f414",
+      "block": 11744756,
+      "gasUsed": 1281971,
+      "nonce": 72,
       "args": [
-        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
-        "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
+        "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb",
+        "0x032D4aCa0F86707c9d331C11A382E6989CFE8aB9",
         "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
       ]
     },
     "Groth16Verifier": {
-      "address": "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
-      "tx": "0xd1222aa648e1aacc1c2fb4e9681a19133d1ba37899743e1e01a3cafe7066ce77",
-      "block": 11740812,
-      "gasUsed": 588302,
-      "nonce": 41,
+      "address": "0x64c18C506e8a202d98822F97911dF774e9b85f85",
+      "tx": "0xecc48af3d4d78cb8cdd1f908189931ae2a6d927d0480adbc67f84afb60c4ddcd",
+      "block": 11744756,
+      "gasUsed": 629152,
+      "nonce": 73,
       "args": []
     },
     "Groth16KYAVerifierAdapter": {
-      "address": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
-      "tx": "0x56c89343e048dac13929196e752397dc793006b3f15821b7696e78cc54e662a2",
-      "block": 11740812,
-      "gasUsed": 687816,
-      "nonce": 42,
+      "address": "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7",
+      "tx": "0x5660aca3759bfbe3bf629985c041aaeb5a580a5c6e680a51229cb4a7929c1f8a",
+      "block": 11744757,
+      "gasUsed": 695384,
+      "nonce": 74,
       "args": [
-        "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
+        "0x64c18C506e8a202d98822F97911dF774e9b85f85",
         "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
         "2592000",
         "1"
@@ -98,11 +98,21 @@
     "note": "TEST ONLY — attestor keys derive from public seeds"
   },
   "zk": {
-    "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 2)",
-    "vkHash": "0xd700e6c18b1d3286e0114b6d9fa16121b85e88318bc80e396936e02081bd001c",
-    "ceremony": "single-party test ceremony (pot15 reused from revision 1, fresh phase 2)"
+    "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 3: admissionDomain public input, Poseidon(6) nullifier)",
+    "vkHash": "0x7c0e948ac0d39a9f4cd1b006b4fb3984ff7b1acc24eeb1380767c2996ac3be07",
+    "ceremony": "single-party test ceremony (pot15 reused, fresh phase 2 for circuit rev 3)"
   },
   "superseded": [
+    {
+      "revision": "4-draft",
+      "file": "deployments/sepolia-r4-draft.json",
+      "note": "registry-bound schemeId (option B); withdrawn the same day, never published"
+    },
+    {
+      "revision": 3,
+      "file": "deployments/sepolia-r3.json",
+      "note": "proof bound to the scheme registry only, not to the admitting KYA registry; bridge configHash in requestHash"
+    },
     {
       "revision": 2,
       "file": "deployments/sepolia-r2.json",

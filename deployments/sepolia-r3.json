@@ -1,0 +1,117 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "revision": 3,
+  "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+  "deployedAt": "2026-09-20",
+  "note": "Revision 3 (after the second external review): schemeId embeds chainId + registry; binding kind on-chain with issuance witness and complete/registry-local resolution; verifier code-hash pinning; policyId commits rulesHash; bridge configHash in request/response provenance and full-schemeId tag. Circuit unchanged from revision 2 (Groth16Verifier bytecode identical, redeployed for a self-contained stack). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
+  "erc8004": {
+    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+    "validationRegistry": "not deployed by ERC-8004 authors yet — companion ValidationRegistry8004 used"
+  },
+  "contracts": {
+    "KYASchemeRegistry": {
+      "address": "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75",
+      "tx": "0x3302fcf427033f17527e38e76de42c4daa57b490ba413f014d3c101c5f8bacb5",
+      "block": 11740808,
+      "gasUsed": 819879,
+      "nonce": 36,
+      "args": []
+    },
+    "KYARegistry": {
+      "address": "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
+      "tx": "0x139724609b04675f888d00c48bb0c481dbd729234c2fe3c3a1975f6278ebf3d4",
+      "block": 11740808,
+      "gasUsed": 1849968,
+      "nonce": 37,
+      "args": [
+        "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75"
+      ]
+    },
+    "KYAPolicyRegistry": {
+      "address": "0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf",
+      "tx": "0xb98fc0f99a844650b640a985e2e8f5ad1bae5cffa56c805c6089afe9e6ab2133",
+      "block": 11740808,
+      "gasUsed": 988029,
+      "nonce": 38,
+      "args": [
+        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f"
+      ]
+    },
+    "ValidationRegistry8004": {
+      "address": "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
+      "tx": "0xbd6e780f075fd6c4b40f16b9567639f57f9ee7ef49c99269a37f2a6291eca593",
+      "block": 11740808,
+      "gasUsed": 984956,
+      "nonce": 39,
+      "args": [
+        "0x8004A818BFB912233c491871b3d84c89A494BD9e"
+      ]
+    },
+    "KYABridge8004": {
+      "address": "0x4965e40900CBE94293dC43846C289eE2E13c32E9",
+      "tx": "0xaba842d05bc746463772167f4aed47b6c7d27fd78511dd63f6a55f8477739ec7",
+      "block": 11740812,
+      "gasUsed": 1296232,
+      "nonce": 40,
+      "args": [
+        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
+        "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
+        "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+      ]
+    },
+    "Groth16Verifier": {
+      "address": "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
+      "tx": "0xd1222aa648e1aacc1c2fb4e9681a19133d1ba37899743e1e01a3cafe7066ce77",
+      "block": 11740812,
+      "gasUsed": 588302,
+      "nonce": 41,
+      "args": []
+    },
+    "Groth16KYAVerifierAdapter": {
+      "address": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
+      "tx": "0x56c89343e048dac13929196e752397dc793006b3f15821b7696e78cc54e662a2",
+      "block": 11740812,
+      "gasUsed": 687816,
+      "nonce": 42,
+      "args": [
+        "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
+        "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+        "2592000",
+        "1"
+      ]
+    }
+  },
+  "adapterConfig": {
+    "epochSeconds": 2592000,
+    "epochGrace": 1,
+    "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+  },
+  "demoIssuerSet": {
+    "seeds": [
+      "kya-demo-issuer-alice",
+      "kya-demo-issuer-bob",
+      "kya-demo-issuer-carol"
+    ],
+    "root": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+    "note": "TEST ONLY — attestor keys derive from public seeds"
+  },
+  "zk": {
+    "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 2)",
+    "vkHash": "0xd700e6c18b1d3286e0114b6d9fa16121b85e88318bc80e396936e02081bd001c",
+    "ceremony": "single-party test ceremony (pot15 reused from revision 1, fresh phase 2)"
+  },
+  "superseded": [
+    {
+      "revision": 2,
+      "file": "deployments/sepolia-r2.json",
+      "note": "lacks binding witness/predicate, rulesHash, configHash, code-hash pinning; schemeIds not chain/registry-scoped"
+    },
+    {
+      "revision": 1,
+      "file": "deployments/sepolia-r1.json",
+      "note": "circuit rev 1 — do not rely on"
+    }
+  ]
+}

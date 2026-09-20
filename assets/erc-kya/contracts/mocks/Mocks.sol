@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {IKYAVerifier} from "../interfaces/IKYAVerifier.sol";
-import {IGroth16Verifier13} from "../verifiers/Groth16KYAVerifierAdapter.sol";
+import {IGroth16Verifier15} from "../verifiers/Groth16KYAVerifierAdapter.sol";
 import {IERC8004IdentityRegistry} from "../interfaces/IERC8004Validation.sol";
 
-/// @dev TEST ONLY. Accepts a proof iff proof == abi.encode(keccak256(publicInputs), secret).
+/// @dev TEST ONLY. Accepts a proof iff proof == abi.encode(keccak256(abi.encode(schemeId, admissionDomain, publicInputs)), secret),
+///      i.e. a mock proof is bound to the rule and to the admission domain exactly like a real one.
 ///      Demonstrates the adapter contract shape without a real circuit.
 contract MockKYAVerifier is IKYAVerifier {
     bytes32 public immutable secret;
@@ -14,14 +15,14 @@ contract MockKYAVerifier is IKYAVerifier {
         secret = secret_;
     }
 
-    function verify(bytes32, bytes calldata publicInputs, bytes calldata proof)
+    function verify(bytes32 schemeId, bytes32 admissionDomain, bytes calldata publicInputs, bytes calldata proof)
         external
         view
         returns (bool ok, bytes32 subjectKey, bytes32 nullifier, uint8 level, bytes32 claimDigest, uint64 expiresAt, bytes32 anchor)
     {
         (subjectKey, nullifier, level, claimDigest, expiresAt) =
             abi.decode(publicInputs, (bytes32, bytes32, uint8, bytes32, uint64));
-        ok = keccak256(proof) == keccak256(abi.encode(keccak256(publicInputs), secret));
+        ok = keccak256(proof) == keccak256(abi.encode(keccak256(abi.encode(schemeId, admissionDomain, publicInputs)), secret));
         if (!ok) return (false, 0, 0, 0, 0, 0, 0);
         anchor = keccak256("mock-anchor");
     }
@@ -34,18 +35,18 @@ contract MockVerifierProxy is IKYAVerifier {
     address public impl;
     constructor(address impl_) { impl = impl_; }
     function setImpl(address impl_) external { impl = impl_; }
-    function verify(bytes32 schemeId, bytes calldata publicInputs, bytes calldata proof)
+    function verify(bytes32 schemeId, bytes32 admissionDomain, bytes calldata publicInputs, bytes calldata proof)
         external
         view
         returns (bool, bytes32, bytes32, uint8, bytes32, uint64, bytes32)
     {
-        return IKYAVerifier(impl).verify(schemeId, publicInputs, proof);
+        return IKYAVerifier(impl).verify(schemeId, admissionDomain, publicInputs, proof);
     }
 }
 
 /// @dev TEST ONLY. Groth16 stand-in that accepts when a[0] == 1.
-contract MockGroth16Verifier13 is IGroth16Verifier13 {
-    function verifyProof(uint256[2] calldata a, uint256[2][2] calldata, uint256[2] calldata, uint256[13] calldata)
+contract MockGroth16Verifier15 is IGroth16Verifier15 {
+    function verifyProof(uint256[2] calldata a, uint256[2][2] calldata, uint256[2] calldata, uint256[15] calldata)
         external
         pure
         returns (bool)

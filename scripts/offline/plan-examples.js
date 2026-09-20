@@ -33,7 +33,7 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
     dimensions: ["accountability", "compliance"], levels: { "0": { label: "not verified", erc8004Response: 0 }, "4": { label: "accountable", erc8004Response: 100 } },
     evidenceKinds: ["zk-proof"], issuerPolicy: { kind: "verifier-only" },
     circuit: { system: "groth16", vkHash, publicInputLayout: ["subjectKey", "nullifier", "level", "claimDigest", "expiresAt", "issuerSetRoot", "epoch"],
-      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch",
+      publicInputAbi: ["bytes32", "bytes32", "uint8", "bytes32", "uint64", "bytes32", "uint64"], nullifierScope: "scheme-epoch", proofBinding: ["schemeId", "admissionDomain"],
       epochSeconds: dep.adapterConfig.epochSeconds, epochGrace: dep.adapterConfig.epochGrace, issuerHiding: true, issuerSetRoot: dep.adapterConfig.issuerSetRoot,
       credentialBinding: ["subjectKey", "schemeId", "level", "claimDigest", "expiresAt", "proverCommitment"] },
   };
@@ -65,9 +65,10 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
   const claim = { subjectKey, schemeId: provedScheme, level: 4, claimDigest: ethers.id("claims:jurisdiction=SG;entity-verified"), expiresAt };
   const sig = zk.attest(attestors[1], claim, secret);
   const epoch = zk.epochFor(now, dep.adapterConfig.epochSeconds);
-  const pr = await zk.prove({ ...claim, epoch, secret, attestor: attestors[1], sig, set });
+  const admissionDomain = zk.admissionDomain(net.chainId, A.KYASchemeRegistry, A.KYARegistry);
+  const pr = await zk.prove({ ...claim, epoch, admissionDomain, secret, attestor: attestors[1], sig, set });
   if (!(await zk.verifyLocally(pr.publicSignals, pr.rawProof))) throw new Error("proof invalid");
-  add("attestWithProof", A.KYARegistry, K.encodeFunctionData("attestWithProof", [subject, provedScheme, pr.publicInputs, pr.proof, dataUri({ layout: "kya-public-v1", circuit: "kya_public_v1 rev 2" })]), { round: "B" });
+  add("attestWithProof", A.KYARegistry, K.encodeFunctionData("attestWithProof", [subject, provedScheme, pr.publicInputs, pr.proof, dataUri({ layout: "kya-public-v1", circuit: "kya_public_v1 rev 3" })]), { round: "B" });
 
   const rules = [{ schemeId: attestedScheme, minLevel: 2, issuers: [deployer] }, { schemeId: provedScheme, minLevel: 4, issuers: [A.Groth16KYAVerifierAdapter] }];
   const rulesHash = ethers.keccak256(coder.encode(["tuple(bytes32 schemeId,uint8 minLevel,address[] issuers)[]"], [rules]));
@@ -80,8 +81,8 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
   const trustedIssuers = [deployer], responseMap = [0, 25, 60, 100];
   const configHash = ethers.keccak256(coder.encode(["bytes32", "address[]", "uint8[]"], [attestedScheme, trustedIssuers, responseMap]));
   add("bridge.configureScheme", A.KYABridge8004, B.encodeFunctionData("configureScheme", [attestedScheme, trustedIssuers, responseMap]), { round: "B" });
-  const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "bytes32", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), net.chainId, net.identityRegistry, A.KYABridge8004, configHash, agentId, attestedScheme]));
-  add("validationRequest(bridge)", A.ValidationRegistry8004, V.encodeFunctionData("validationRequest", [A.KYABridge8004, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: A.KYABridge8004, configHash, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash]), { round: "B" });
+  const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), net.chainId, net.identityRegistry, A.KYABridge8004, agentId, attestedScheme]));
+  add("validationRequest(bridge)", A.ValidationRegistry8004, V.encodeFunctionData("validationRequest", [A.KYABridge8004, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: A.KYABridge8004, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash]), { round: "B" });
   // round C
   add("bridge.sync", A.KYABridge8004, B.encodeFunctionData("sync", [agentId, attestedScheme]), { round: "C" });
 
