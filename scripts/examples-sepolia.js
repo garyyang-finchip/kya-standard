@@ -53,7 +53,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
     evidenceKinds: ["domain-proof", "erc8004-validation"], issuerPolicy: { kind: "open" },
   };
   const attestedBytes = Buffer.from(JSON.stringify(attestedDesc));
-  rc = await sendAndWait("registerScheme(attested)", schemes.registerScheme(dataUri(attestedDesc), ethers.keccak256(attestedBytes), 0, ethers.ZeroAddress, ethers.ZeroHash));
+  rc = await sendAndWait("registerScheme(attested)", schemes.registerScheme(dataUri(attestedDesc), ethers.keccak256(attestedBytes), 0, 1 /* CONTROLLER */, ethers.ZeroAddress, ethers.ZeroHash));
   const attestedScheme = rc.logs.map((l) => { try { return schemes.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "SchemeRegistered").args.schemeId;
   console.log(`  attested schemeId ${attestedScheme}`);
 
@@ -68,7 +68,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
       epochSeconds: dep.adapterConfig.epochSeconds, epochGrace: dep.adapterConfig.epochGrace, issuerHiding: true, issuerSetRoot: dep.adapterConfig.issuerSetRoot,
       credentialBinding: ["subjectKey", "schemeId", "level", "claimDigest", "expiresAt", "proverCommitment"] },
   };
-  rc = await sendAndWait("registerScheme(proved)", schemes.registerScheme(dataUri(provedDesc), ethers.keccak256(Buffer.from(JSON.stringify(provedDesc))), 1, dep.contracts.Groth16KYAVerifierAdapter.address, ethers.ZeroHash));
+  rc = await sendAndWait("registerScheme(proved)", schemes.registerScheme(dataUri(provedDesc), ethers.keccak256(Buffer.from(JSON.stringify(provedDesc))), 1, 1 /* CONTROLLER */, dep.contracts.Groth16KYAVerifierAdapter.address, ethers.ZeroHash));
   const provedScheme = rc.logs.map((l) => { try { return schemes.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "SchemeRegistered").args.schemeId;
   console.log(`  proved schemeId ${provedScheme}`);
   rec("schemes", { attested: attestedScheme, proved: provedScheme });
@@ -111,8 +111,9 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   console.log("\n5. policy");
   const policyDesc = { type: "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1", name: "demo counterparty baseline",
     require: { allOf: [{ schemeId: attestedScheme, minLevel: 2, issuers: [wallet.address] }, { schemeId: provedScheme, minLevel: 4, issuers: [dep.contracts.Groth16KYAVerifierAdapter.address] }] } };
-  rc = await sendAndWait("registerPolicyWithRules", policies.registerPolicyWithRules(dataUri(policyDesc), ethers.keccak256(Buffer.from(JSON.stringify(policyDesc))),
-    [{ schemeId: attestedScheme, minLevel: 2, issuers: [wallet.address] }, { schemeId: provedScheme, minLevel: 4, issuers: [dep.contracts.Groth16KYAVerifierAdapter.address] }]));
+  const rules = [{ schemeId: attestedScheme, minLevel: 2, issuers: [wallet.address] }, { schemeId: provedScheme, minLevel: 4, issuers: [dep.contracts.Groth16KYAVerifierAdapter.address] }];
+  policyDesc.onchain = { evaluator: `eip155:${net.chainId}:${dep.contracts.KYAPolicyRegistry.address}`, rulesHash: await policies.rulesHashOf(rules), sufficient: true };
+  rc = await sendAndWait("registerPolicyWithRules", policies.registerPolicyWithRules(dataUri(policyDesc), ethers.keccak256(Buffer.from(JSON.stringify(policyDesc))), rules));
   const policyId = rc.logs.map((l) => { try { return policies.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "PolicyRegistered").args.policyId;
   console.log(`  policyId ${policyId}  evaluate → ${await policies.evaluate(subject, policyId)}`);
   rec("policy", { tx: rc.hash, policyId });
@@ -122,7 +123,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   rc = await sendAndWait("bridge.configureScheme", bridge.configureScheme(attestedScheme, [wallet.address], [0, 25, 60, 100]));
   const cfgTx = rc.hash;
   const requestHash = await bridge.requestHashFor(agentId, attestedScheme);
-  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: dep.contracts.KYABridge8004.address, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
+  rc = await sendAndWait("validationRequest(bridge)", validation.validationRequest(dep.contracts.KYABridge8004.address, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: dep.contracts.KYABridge8004.address, configHash: (await bridge.getSchemeConfig(attestedScheme))[2], agentId: agentId.toString(), schemeId: attestedScheme }), requestHash));
   const reqTx = rc.hash;
   rc = await sendAndWait("bridge.sync", bridge.sync(agentId, attestedScheme));
   const st = await validation.getValidationStatus(requestHash);

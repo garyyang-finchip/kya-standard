@@ -33,9 +33,9 @@ async function test(name, fn) {
   const adapter = await h.deploy("Groth16KYAVerifierAdapter", [g16.addr, set.rootHex, EPOCH_LEN, GRACE]);
   const epochNow = () => zk.epochFor(h.timestamp, EPOCH_LEN);
 
-  const { result: schemeId } = await schemes.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, adapter.addr, ethers.ZeroHash], "issuerA");
+  const { result: schemeId } = await schemes.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0 /* IDENTITY: subject is a foreign-chain agent in this test */, adapter.addr, ethers.ZeroHash], "issuerA");
   // a second PROVED scheme sharing the SAME verifier and issuer set (cross-scheme replay target)
-  const { result: schemeB } = await schemes.send("registerScheme", ["ipfs://other-zk-scheme", ethers.id("zk-desc-b"), 1, adapter.addr, ethers.ZeroHash], "issuerA");
+  const { result: schemeB } = await schemes.send("registerScheme", ["ipfs://other-zk-scheme", ethers.id("zk-desc-b"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerA");
 
   const subj = subject8004(1n, "0x8004A818BFB912233c491871b3d84c89A494BD9e", 22n);
   const subjectKey = subjectKeyOf(subj);
@@ -181,6 +181,22 @@ async function test(name, fn) {
     // proof is valid for set2's root, but the adapter pins the real issuer set root
     assert.equal(await zk.verifyLocally(p.publicSignals, p.rawProof), true);
     await expectRevert(kya.send("attestWithProof", [subj, schemeId, p.publicInputs, p.proof, ""], "relayer"), "IssuerSetRootMismatch");
+  });
+
+  await test("cross-registry replay: a proof for registry A's scheme cannot be admitted by registry B even with the same controller/descriptor/verifier", async () => {
+    const schemesB = await h.deploy("KYASchemeRegistry");
+    const kyaB = await h.deploy("KYARegistry", [schemesB.addr]);
+    // same controller, same descriptor hash, same verifier — but schemeId embeds (chainId, registry)
+    const { result: idB } = await schemesB.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerA");
+    assert.notEqual(idB, schemeId);
+    // Bob's credential and proof were made for registry A's schemeId; registry B feeds ITS schemeId as the public signal
+    const fresh = zk.randomSecret();
+    const sig = zk.attest(attestors[1], claim, fresh); // claim.schemeId === registry A's id
+    const p = await zk.prove({ ...claim, epoch: epochNow(), secret: fresh, attestor: attestors[1], sig, set });
+    assert.equal(await zk.verifyLocally(p.publicSignals, p.rawProof), true);
+    await expectRevert(kyaB.send("attestWithProof", [subj, idB, p.publicInputs, p.proof, ""], "relayer"), "KYA_VerifierRejected");
+    // nullifier scopes are therefore disjoint by construction, not by accident
+    assert.equal(await kyaB.call("isNullifierUsed", [idB, p.nullifier]), false);
   });
 
   await test("proof bound to another subject is rejected (subject substitution)", async () => {

@@ -27,6 +27,22 @@ contract MockKYAVerifier is IKYAVerifier {
     }
 }
 
+/// @dev TEST ONLY. A verifier that can be destroyed/redeployed to simulate a code change under a stable
+///      address is not expressible in plain Solidity ≥0.8.18 (selfdestruct semantics); the regression test
+///      instead swaps the address behind a minimal proxy. This is that proxy.
+contract MockVerifierProxy is IKYAVerifier {
+    address public impl;
+    constructor(address impl_) { impl = impl_; }
+    function setImpl(address impl_) external { impl = impl_; }
+    function verify(bytes32 schemeId, bytes calldata publicInputs, bytes calldata proof)
+        external
+        view
+        returns (bool, bytes32, bytes32, uint8, bytes32, uint64, bytes32)
+    {
+        return IKYAVerifier(impl).verify(schemeId, publicInputs, proof);
+    }
+}
+
 /// @dev TEST ONLY. Groth16 stand-in that accepts when a[0] == 1.
 contract MockGroth16Verifier13 is IGroth16Verifier13 {
     function verifyProof(uint256[2] calldata a, uint256[2][2] calldata, uint256[2] calldata, uint256[13] calldata)
@@ -58,6 +74,13 @@ contract MockIdentityRegistry is IERC8004IdentityRegistry {
     function ownerOf(uint256 agentId) external view returns (address) {
         require(_owner[agentId] != address(0), "no agent");
         return _owner[agentId];
+    }
+
+    /// @dev TEST ONLY: simulate an ERC-721 transfer of the agent.
+    function transferFrom(address from, uint256 agentId, address to) external {
+        require(_owner[agentId] == from && msg.sender == from, "not owner");
+        _owner[agentId] = to;
+        _approved[agentId] = address(0);
     }
 
     function approve(uint256 agentId, address to) external {

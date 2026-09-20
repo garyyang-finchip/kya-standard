@@ -51,26 +51,30 @@ async function test(name, fn) {
 
   // --- Scheme registry ----------------------------------------------------
   let attestedScheme, provedScheme;
-  await test("registerScheme derives schemeId = keccak(controller, schemeHash, nonce)", async () => {
+  await test("registerScheme derives schemeId = keccak(chainId, registry, controller, schemeHash, nonce); binding stored", async () => {
     const hash = ethers.id("descriptor-v1");
-    const { result, logs } = await schemes.send("registerScheme", ["ipfs://scheme-a", hash, 0, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
+    const { result, logs } = await schemes.send("registerScheme", ["ipfs://scheme-a", hash, 0, 1 /* CONTROLLER */, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
     attestedScheme = result;
-    const expected = ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [A("issuerA"), hash, 0]));
+    const expected = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [1n, schemes.addr, A("issuerA"), hash, 0]));
     assert.equal(attestedScheme, expected);
     assert.equal(logs[0].name, "SchemeRegistered");
     const s = await schemes.call("getScheme", [attestedScheme]);
     assert.equal(s.controller, A("issuerA"));
     assert.equal(Number(s.mode), 0);
+    assert.equal(Number(s.binding), 1);
   });
 
-  await test("PROVED scheme requires a verifier; invalid mode and zero schemeHash rejected", async () => {
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 1, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_VerifierRequired");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 2, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_InvalidMode");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.ZeroHash, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_SchemeHashRequired");
-    const { result } = await schemes.send("registerScheme", ["ipfs://scheme-zk", ethers.id("zk-v1"), 1, mockVerifier.addr, ethers.ZeroHash], "issuerA");
+  await test("PROVED scheme requires a contract verifier (codehash pinned); invalid mode/binding and zero schemeHash rejected", async () => {
+    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 1, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_VerifierRequired");
+    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 1, 0, A("stranger"), ethers.ZeroHash]), "KYA_VerifierNotContract");
+    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 2, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_InvalidMode");
+    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 0, 3, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_InvalidBinding");
+    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.ZeroHash, 0, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_SchemeHashRequired");
+    const { result } = await schemes.send("registerScheme", ["ipfs://scheme-zk", ethers.id("zk-v1"), 1, 0 /* IDENTITY */, mockVerifier.addr, ethers.ZeroHash], "issuerA");
     provedScheme = result;
     const s = await schemes.call("getScheme", [provedScheme]);
     assert.equal(s.verifier, mockVerifier.addr);
+    assert.notEqual(s.verifierCodehash, ethers.ZeroHash);
   });
 
   await test("scheme semantics are immutable: only URI re-pointing, freeze and controller transfer; predecessor must be own", async () => {
@@ -86,8 +90,8 @@ async function test(name, fn) {
     assert.equal(Number(after.mode), Number(before.mode));
     await schemes.send("freezeScheme", [attestedScheme], "issuerA");
     await expectRevert(schemes.send("setSchemeURI", [attestedScheme, "ipfs://z"], "issuerA"), "KYA_Frozen");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, ethers.ZeroAddress, attestedScheme], "issuerB"), "KYA_BadPredecessor");
-    const { result: v2 } = await schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, ethers.ZeroAddress, attestedScheme], "issuerA");
+    await expectRevert(schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme], "issuerB"), "KYA_BadPredecessor");
+    const { result: v2 } = await schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme], "issuerA");
     assert.equal((await schemes.call("getScheme", [v2])).predecessor, attestedScheme);
   });
 
@@ -115,6 +119,9 @@ async function test(name, fn) {
     assert.equal(Number(a.level), 2);
     assert.equal(Number(a.status), 0);
     assert.equal(a.anchor, ethers.ZeroHash); // ATTESTED: no anchor
+    // controller-bound scheme on an erc8004 subject: witness = keccak(abi.encode(ownerOf(agentId)))
+    assert.equal(a.bindingWitness, ethers.keccak256(coder.encode(["address"], [A("agentOwner")])));
+    assert.equal(Number(await kya.call("bindingStatus", [a1])), 1); // SATISFIED
   });
 
   await test("attest on a PROVED scheme reverts with KYA_ModeMismatch", async () => {
@@ -215,7 +222,7 @@ async function test(name, fn) {
     await expectRevert(adapter.send("verify", [ethers.ZeroHash, enc(ethers.id("g1"), 0, ethers.id("other")), okProof]), "IssuerSetRootMismatch");
     await expectRevert(adapter.send("verify", [ethers.ZeroHash, enc(ethers.id("g1"), 5), okProof]), "EpochOutOfWindow");
     // plug the adapter into a real PROVED scheme and record
-    const { result: g16Scheme } = await schemes.send("registerScheme", ["ipfs://g16", ethers.id("g16"), 1, adapter.addr, ethers.ZeroHash], "issuerB");
+    const { result: g16Scheme } = await schemes.send("registerScheme", ["ipfs://g16", ethers.id("g16"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerB");
     const { result: id } = await kya.send("attestWithProof", [subj(), g16Scheme, pi, okProof, ""], "relayer");
     const rec = await kya.call("getAssertion", [id]);
     assert.equal(rec.issuer, adapter.addr);
@@ -242,10 +249,10 @@ async function test(name, fn) {
   });
 
   // --- Policy --------------------------------------------------------------
-  await test("policy: registerPolicy id derivation; on-chain allOf evaluation", async () => {
+  await test("policy: policyId = keccak(owner, policyHash, rulesHash, nonce); on-chain allOf evaluation", async () => {
     const ph = ethers.id("policy-1");
     const { result: pid } = await policies.send("registerPolicy", ["ipfs://policy", ph], "agentOwner");
-    assert.equal(pid, ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [A("agentOwner"), ph, 0])));
+    assert.equal(pid, ethers.keccak256(coder.encode(["address", "bytes32", "bytes32", "uint256"], [A("agentOwner"), ph, ethers.ZeroHash, 0])));
     await expectRevert(policies.send("evaluate", [subj(), pid]), "KYA_NoOnchainRules");
     // fresh attested level 2 by issuerA + proved level 4 already present
     await kya.send("attest", [subj(), attestedScheme, 2, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
@@ -254,6 +261,10 @@ async function test(name, fn) {
       { schemeId: provedScheme, minLevel: 4, issuers: [mockVerifier.addr] },
     ];
     const { result: pid2 } = await policies.send("registerPolicyWithRules", ["ipfs://policy2", ethers.id("p2"), rules], "agentOwner");
+    const rh = await policies.call("rulesHashOf", [rules]);
+    assert.equal(rh, ethers.keccak256(coder.encode(["tuple(bytes32 schemeId,uint8 minLevel,address[] issuers)[]"], [rules])));
+    assert.equal(pid2, ethers.keccak256(coder.encode(["address", "bytes32", "bytes32", "uint256"], [A("agentOwner"), ethers.id("p2"), rh, 1])));
+    assert.equal((await policies.call("getPolicy", [pid2])).rulesHash, rh);
     assert.equal(await policies.call("evaluate", [subj(), pid2]), true);
     const strict = [{ schemeId: attestedScheme, minLevel: 3, issuers: [A("issuerA")] }];
     const { result: pid3 } = await policies.send("registerPolicyWithRules", ["ipfs://policy3", ethers.id("p3"), strict], "agentOwner");
@@ -261,12 +272,15 @@ async function test(name, fn) {
   });
 
   // --- ERC-8004 bridge -----------------------------------------------------
-  await test("bridge: requestHash formula, tag format, level→response mapping, revocation drives response to 0", async () => {
+  await test("bridge: requestHash binds configHash, full-schemeId tag, level→response mapping, revocation drives response to 0", async () => {
+    await expectRevert(bridge.send("requestHashFor", [agentId, attestedScheme]), "SchemeNotConfigured");
     await bridge.send("configureScheme", [attestedScheme, [A("issuerA")], [0, 25, 60, 100]]);
+    const cfg = ethers.keccak256(coder.encode(["bytes32", "address[]", "uint8[]"], [attestedScheme, [A("issuerA")], [0, 25, 60, 100]]));
+    assert.equal((await bridge.call("getSchemeConfig", [attestedScheme]))[2], cfg);
     const rh = await bridge.call("requestHashFor", [agentId, attestedScheme]);
-    const expected = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identity.addr, bridge.addr, agentId, attestedScheme]));
+    const expected = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "bytes32", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), chainId, identity.addr, bridge.addr, cfg, agentId, attestedScheme]));
     assert.equal(rh, expected);
-    assert.equal(await bridge.call("tagFor", [attestedScheme]), "kya:" + attestedScheme.slice(2, 10));
+    assert.equal(await bridge.call("tagFor", [attestedScheme]), "kya:" + attestedScheme.slice(2));
 
     await expectRevert(bridge.send("sync", [agentId, attestedScheme], "stranger"), "RequestNotFound");
     // agent owner files the ERC-8004 validation request pointing at the bridge
@@ -277,7 +291,8 @@ async function test(name, fn) {
     assert.equal(Number(resp), 60); // level 2 → 60
     let st = await validation.call("getValidationStatus", [rh]);
     assert.equal(Number(st[2]), 60);
-    assert.equal(st[4], "kya:" + attestedScheme.slice(2, 10));
+    assert.equal(st[4], "kya:" + attestedScheme.slice(2));
+    assert.equal(st[3], ethers.keccak256(coder.encode(["bytes32", "uint8", "bytes32"], [await kya.call("latestAssertion", [subjectKey(subj()), attestedScheme, A("issuerA")]), 2, cfg])));
 
     // revoke → resync → 0
     const latest = await kya.call("latestAssertion", [subjectKey(subj()), attestedScheme, A("issuerA")]);
@@ -301,6 +316,155 @@ async function test(name, fn) {
     await identity.send("setMetadata", [agentId, "kya", meta], "agentOwner");
     assert.equal(await identity.call("getMetadata", [agentId, "kya"]), meta);
     await expectRevert(identity.send("setMetadata", [agentId, "kya", meta], "stranger"), "not authorized");
+  });
+
+  // --- Regression cases (revision 3, from external review) -------------------
+  console.log("\nregression cases (revision 3)\n");
+
+  await test("R1 policy projection mismatch: a strict document and weaker executable rules cannot share one policyId", async () => {
+    const doc = ethers.id("policy-doc: scheme X >= 4 from issuerA");
+    const strict = [{ schemeId: attestedScheme, minLevel: 4, issuers: [A("issuerA")] }];
+    const weak = [{ schemeId: attestedScheme, minLevel: 1, issuers: [A("issuerA")] }];
+    const { result: pStrict } = await policies.send("registerPolicyWithRules", ["ipfs://p", doc, strict], "agentOwner");
+    const { result: pWeak } = await policies.send("registerPolicyWithRules", ["ipfs://p", doc, weak], "agentOwner");
+    assert.notEqual(pStrict, pWeak);
+    const rStrict = await policies.call("rulesHashOf", [strict]), rWeak = await policies.call("rulesHashOf", [weak]);
+    assert.notEqual(rStrict, rWeak);
+    // the id commits the exact projection: same owner/doc/nonce with a different projection is a different id
+    const nonceStrict = 3n; // agentOwner nonces so far: 0,1,2 used above
+    assert.equal(pStrict, ethers.keccak256(coder.encode(["address", "bytes32", "bytes32", "uint256"], [A("agentOwner"), doc, rStrict, nonceStrict])));
+    // an evaluator reading pStrict cannot be handed the weak rules
+    assert.deepEqual((await policies.call("getRules", [pStrict])).map((r) => Number(r.minLevel)), [4]);
+    // rules with an empty issuer list or no rules at all are rejected at registration
+    await expectRevert(policies.send("registerPolicyWithRules", ["ipfs://p", doc, [{ schemeId: attestedScheme, minLevel: 1, issuers: [] }]], "agentOwner"), "KYA_EmptyIssuers");
+    await expectRevert(policies.send("registerPolicyWithRules", ["ipfs://p", doc, []], "agentOwner"), "KYA_NoOnchainRules");
+  });
+
+  await test("R2 controller transfer: complete check/evaluate fail after transfer; registry-local resolve still sees the assertion", async () => {
+    // fresh agent owned by agentOwner, controller-bound level-3 assertion, policy over it
+    const { result: id2 } = await identity.send("register", ["ipfs://agent2.json"], "agentOwner");
+    const s2 = subject8004(chainId, identity.addr, id2);
+    const { result: aid } = await kya.send("attest", [s2, attestedScheme, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    const { result: pol } = await policies.send("registerPolicyWithRules", ["ipfs://p2", ethers.id("p-transfer"), [{ schemeId: attestedScheme, minLevel: 3, issuers: [A("issuerA")] }]], "agentOwner");
+    assert.equal(Number(await kya.call("bindingStatus", [aid])), 1); // SATISFIED
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), true);
+    assert.equal(await policies.call("evaluate", [s2, pol]), true);
+    // t1: Alice transfers the agent to Bob
+    await identity.send("transferFrom", [A("agentOwner"), id2, A("stranger")], "agentOwner");
+    // t2: assertion is still ACTIVE and unexpired ...
+    assert.equal(Number((await kya.call("getAssertion", [aid])).status), 0);
+    // ... but its binding predicate is VIOLATED, so complete resolution excludes it
+    assert.equal(Number(await kya.call("bindingStatus", [aid])), 2);
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), false);
+    assert.equal(await policies.call("evaluate", [s2, pol]), false);
+    assert.equal((await kya.call("resolve", [s2, attestedScheme, [A("issuerA")]])).assertionId, ethers.ZeroHash);
+    // registry-local view still returns it — and is documented as NOT complete policy satisfaction
+    assert.equal((await kya.call("resolveLocal", [s2, attestedScheme, [A("issuerA")]])).assertionId, aid);
+    // a new assertion issued to the new controller is bound to Bob and satisfies again
+    const { result: aid2 } = await kya.send("attest", [s2, attestedScheme, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    assert.equal((await kya.call("getAssertion", [aid2])).bindingWitness, ethers.keccak256(coder.encode(["address"], [A("stranger")])));
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), true);
+    // identity-bound schemes are unaffected by transfer
+    const { result: idScheme } = await schemes.send("registerScheme", ["ipfs://id-bound", ethers.id("idb"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
+    const { result: aid3 } = await kya.send("attest", [s2, idScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    await identity.send("transferFrom", [A("stranger"), id2, A("relayer")], "stranger");
+    assert.equal(Number(await kya.call("bindingStatus", [aid3])), 0); // NOT_APPLICABLE
+    assert.equal(await kya.call("check", [s2, idScheme, 1, [A("issuerA")]]), true);
+    // controller-bound schemes over subjects the registry cannot evaluate natively are refused at issuance
+    const foreign = subject8004(999n, identity.addr, id2);
+    await expectRevert(kya.send("attest", [foreign, attestedScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_BindingUnevaluable");
+    const acct = { subjectType: ACCOUNT, subjectData: coder.encode(["uint256", "address"], [chainId, A("stranger")]) };
+    await expectRevert(kya.send("attest", [acct, attestedScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_BindingUnevaluable");
+  });
+
+  await test("R3 bridge configuration mutation: changing issuers or responseMap changes the interpretation identity (configHash, requestHash)", async () => {
+    const { result: id3 } = await identity.send("register", ["ipfs://agent3.json"], "agentOwner");
+    const s3 = subject8004(chainId, identity.addr, id3);
+    await kya.send("attest", [s3, attestedScheme, 2, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    const cfg0 = (await bridge.call("getSchemeConfig", [attestedScheme]))[2];
+    const rh0 = await bridge.call("requestHashFor", [id3, attestedScheme]);
+    await validation.send("validationRequest", [bridge.addr, id3, "ipfs://req", rh0], "agentOwner");
+    let { result: resp } = await bridge.send("sync", [id3, attestedScheme]);
+    assert.equal(Number(resp), 60);
+    const st0 = await validation.call("getValidationStatus", [rh0]);
+    assert.equal(st0[3], ethers.keccak256(coder.encode(["bytes32", "uint8", "bytes32"], [await kya.call("latestAssertion", [subjectKey(s3), attestedScheme, A("issuerA")]), 2, cfg0])));
+    // operator changes the mapping (same issuers): new configHash, new requestHash, old request no longer syncable
+    await bridge.send("configureScheme", [attestedScheme, [A("issuerA")], [0, 20, 70, 100]]);
+    const cfg1 = (await bridge.call("getSchemeConfig", [attestedScheme]))[2];
+    assert.notEqual(cfg1, cfg0);
+    const rh1 = await bridge.call("requestHashFor", [id3, attestedScheme]);
+    assert.notEqual(rh1, rh0);
+    await expectRevert(bridge.send("sync", [id3, attestedScheme]), "RequestNotFound"); // rh1 not filed yet
+    // the old response stays exactly as committed under cfg0
+    assert.equal(Number((await validation.call("getValidationStatus", [rh0]))[2]), 60);
+    // a new request under the new interpretation yields 70 with a responseHash bound to cfg1
+    await validation.send("validationRequest", [bridge.addr, id3, "ipfs://req2", rh1], "agentOwner");
+    ({ result: resp } = await bridge.send("sync", [id3, attestedScheme]));
+    assert.equal(Number(resp), 70);
+    assert.equal((await validation.call("getValidationStatus", [rh1]))[3], ethers.keccak256(coder.encode(["bytes32", "uint8", "bytes32"], [await kya.call("latestAssertion", [subjectKey(s3), attestedScheme, A("issuerA")]), 2, cfg1])));
+    // changing only the issuer set also changes the identity
+    await bridge.send("configureScheme", [attestedScheme, [A("issuerA"), A("issuerB")], [0, 20, 70, 100]]);
+    assert.notEqual((await bridge.call("getSchemeConfig", [attestedScheme]))[2], cfg1);
+    // restore the original configuration for later tests
+    await bridge.send("configureScheme", [attestedScheme, [A("issuerA")], [0, 25, 60, 100]]);
+  });
+
+  await test("R4 verifier semantic mutation: an existing schemeId cannot acquire different admission behaviour behind a changed verifier", async () => {
+    // (a) code swap behind a proxy: the registry pins the verifier's codehash — a proxy's own code does not
+    //     change when its implementation does, so the pin cannot catch delegation; the spec therefore
+    //     forbids upgradeable verifiers normatively. What the pin DOES catch is a different contract
+    //     appearing at the registered address (redeploy/metamorphic): simulate by comparing codehashes.
+    const good = mockVerifier;
+    const proxy = await h.deploy("MockVerifierProxy", [good.addr]);
+    const { result: sch } = await schemes.send("registerScheme", ["ipfs://proxy", ethers.id("px"), 1, 0, proxy.addr, ethers.ZeroHash], "issuerA");
+    const rec = await schemes.call("getScheme", [sch]);
+    // the pinned codehash is the proxy's, and it is stable across setImpl — documenting the limit
+    const lenient = await h.deploy("MockKYAVerifier", [ethers.id("other-secret")]);
+    await proxy.send("setImpl", [lenient.addr]);
+    assert.equal((await schemes.call("getScheme", [sch])).verifierCodehash, rec.verifierCodehash);
+    // (b) what the registry CAN enforce: if the code at the address differs from the pinned hash, admission reverts.
+    //     Emulate by registering a scheme whose recorded codehash cannot match at call time: deploy a scheme via
+    //     a verifier, then overwrite the account code in the VM to a different contract.
+    const { result: sch2 } = await schemes.send("registerScheme", ["ipfs://pin", ethers.id("pin"), 1, 0, good.addr, ethers.ZeroHash], "issuerA");
+    const sk = subjectKey(subj());
+    const pi = pubInputs(sk, ethers.id("pin-1"), 2, 0);
+    const { result: ok1 } = await kya.send("attestWithProof", [subj(), sch2, pi, proofFor(pi), ""], "relayer");
+    assert.ok(ok1);
+    const originalCode = await h.vm.stateManager.getContractCode(good.address);
+    const proxyCode = await h.vm.stateManager.getContractCode(proxy.address); // any different code
+    await h.vm.stateManager.putContractCode(good.address, proxyCode);
+    const pi2 = pubInputs(sk, ethers.id("pin-2"), 2, 0);
+    await expectRevert(kya.send("attestWithProof", [subj(), sch2, pi2, proofFor(pi2), ""], "relayer"), "KYA_VerifierCodeChanged");
+    // restore the original code: admission works again
+    await h.vm.stateManager.putContractCode(good.address, originalCode);
+    const { result: ok2 } = await kya.send("attestWithProof", [subj(), sch2, pi2, proofFor(pi2), ""], "relayer");
+    assert.ok(ok2);
+  });
+
+  await test("R5 tag collision: distinct schemeIds remain distinguishable in the ERC-8004 projection (full id in tag)", async () => {
+    const t1 = await bridge.call("tagFor", [attestedScheme]);
+    const forged = attestedScheme.slice(0, 10) + "ff".repeat(28); // same 32-bit prefix, different id
+    const t2 = await bridge.call("tagFor", [forged]);
+    assert.equal(t1.slice(0, 12), t2.slice(0, 12)); // old 8-hex tag would have collided
+    assert.notEqual(t1, t2);
+    assert.equal(t1.length, 68);
+    assert.equal(t1, "kya:" + attestedScheme.slice(2).toLowerCase());
+  });
+
+  await test("R6 cross-registry replay: a proof/scheme bound to registry A is not admissible in registry B (schemeId includes chain + registry)", async () => {
+    const schemesB = await h.deploy("KYASchemeRegistry");
+    const kyaB = await h.deploy("KYARegistry", [schemesB.addr]);
+    // same controller, same descriptor hash, same nonce → different schemeId on the second registry
+    const hsh = ethers.id("same-descriptor");
+    const { result: idA } = await schemes.send("registerScheme", ["ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash], "issuerB");
+    const nonceB = await schemesB.call("schemeNonce", [A("issuerB")]);
+    const { result: idB } = await schemesB.send("registerScheme", ["ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash], "issuerB");
+    assert.notEqual(idA, idB);
+    assert.equal(idB, ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [chainId, schemesB.addr, A("issuerB"), hsh, nonceB])));
+    // registry B does not know registry A's schemeId at all
+    await expectRevert(kyaB.send("attestWithProof", [subj(), idA, "0x", "0x", ""], "relayer"), "KYA_SchemeNotFound");
+    // and a proof made for idA (schemeId is a public signal for the real adapter) cannot verify under idB —
+    // demonstrated end to end with the real circuit in test/zk.test.js ("cross-registry replay")
   });
 
   console.log(`\n${passed} passed${process.exitCode ? " — FAILURES ABOVE" : ""}\n`);

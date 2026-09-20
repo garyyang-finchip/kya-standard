@@ -1,10 +1,10 @@
 {
   "network": "sepolia",
   "chainId": "11155111",
-  "revision": 2,
+  "revision": 3,
   "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-  "deployedAt": "2026-09-19",
-  "note": "Revision 2 (post-review): immutable scheme semantics, assertion anchor, IKYAVerifier.verify returns anchor, adapter enforces epoch window, circuit rev 2 (scheme-bound credential, strict Split128), bridge requestHash includes bridge address and reverts on unmapped levels. Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC. Ownership transfer recorded in deployments/ownership.json once done.",
+  "deployedAt": "2026-09-20",
+  "note": "Revision 3 (after the second external review): schemeId embeds chainId + registry; binding kind on-chain with issuance witness and complete/registry-local resolution; verifier code-hash pinning; policyId commits rulesHash; bridge configHash in request/response provenance and full-schemeId tag. Circuit unchanged from revision 2 (Groth16Verifier bytecode identical, redeployed for a self-contained stack). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
   "erc8004": {
     "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
     "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
@@ -12,71 +12,71 @@
   },
   "contracts": {
     "KYASchemeRegistry": {
-      "address": "0xAc7B642a5760467178F20c984f02cc72CCCa8E3f",
-      "tx": "0x3879ce510a15d5d82c1db4f9cfd1f3bdc9e99875f9e2b175b5f28a561c925fd9",
-      "block": 11737350,
-      "gasUsed": 813558,
-      "nonce": 20,
+      "address": "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75",
+      "tx": "0x3302fcf427033f17527e38e76de42c4daa57b490ba413f014d3c101c5f8bacb5",
+      "block": 11740808,
+      "gasUsed": 819879,
+      "nonce": 36,
       "args": []
     },
     "KYARegistry": {
-      "address": "0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f",
-      "tx": "0x57a84c8d052b9654f00237b454f833cb9430bb06a420ba99a421494ee0f5fa9e",
-      "block": 11737350,
-      "gasUsed": 1412372,
-      "nonce": 21,
+      "address": "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
+      "tx": "0x139724609b04675f888d00c48bb0c481dbd729234c2fe3c3a1975f6278ebf3d4",
+      "block": 11740808,
+      "gasUsed": 1849968,
+      "nonce": 37,
       "args": [
-        "0xAc7B642a5760467178F20c984f02cc72CCCa8E3f"
+        "0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75"
       ]
     },
     "KYAPolicyRegistry": {
-      "address": "0x9B53BAD4346AacB34Bac328F1d856dfa2F246cfF",
-      "tx": "0x9234659aa921dc989bdf7bcff752fe7b01b1722f7e6696ed4588e6bae22516f3",
-      "block": 11737350,
-      "gasUsed": 864741,
-      "nonce": 22,
+      "address": "0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf",
+      "tx": "0xb98fc0f99a844650b640a985e2e8f5ad1bae5cffa56c805c6089afe9e6ab2133",
+      "block": 11740808,
+      "gasUsed": 988029,
+      "nonce": 38,
       "args": [
-        "0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f"
+        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f"
       ]
     },
     "ValidationRegistry8004": {
-      "address": "0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53",
-      "tx": "0xea6da0e9865f6e1f13e4acbf5ea77179c8a69a7b508f4835fe1ae5420109d9b7",
-      "block": 11737351,
+      "address": "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
+      "tx": "0xbd6e780f075fd6c4b40f16b9567639f57f9ee7ef49c99269a37f2a6291eca593",
+      "block": 11740808,
       "gasUsed": 984956,
-      "nonce": 23,
+      "nonce": 39,
       "args": [
         "0x8004A818BFB912233c491871b3d84c89A494BD9e"
       ]
     },
     "KYABridge8004": {
-      "address": "0xCcd683927d1fC03A0163B3e9FbE7fC44afFbA5e4",
-      "tx": "0xde5ad3ef2eb72f81439ea4b314775a967f7502e30ef6983bcb38f925945e7d5f",
-      "block": 11737354,
-      "gasUsed": 1142658,
-      "nonce": 24,
+      "address": "0x4965e40900CBE94293dC43846C289eE2E13c32E9",
+      "tx": "0xaba842d05bc746463772167f4aed47b6c7d27fd78511dd63f6a55f8477739ec7",
+      "block": 11740812,
+      "gasUsed": 1296232,
+      "nonce": 40,
       "args": [
-        "0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f",
-        "0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53",
+        "0xcac761d7AD0C99a1df65a239c599a004Dd16028f",
+        "0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3",
         "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
       ]
     },
     "Groth16Verifier": {
-      "address": "0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9",
-      "tx": "0x0d10da59d6b5b7b32685bfa71b0dfe31e69ce0f91b8686d7da0d0837aa5a0222",
-      "block": 11737354,
+      "address": "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
+      "tx": "0xd1222aa648e1aacc1c2fb4e9681a19133d1ba37899743e1e01a3cafe7066ce77",
+      "block": 11740812,
       "gasUsed": 588302,
-      "nonce": 25,
+      "nonce": 41,
       "args": []
     },
     "Groth16KYAVerifierAdapter": {
-      "address": "0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD",
-      "tx": "0x4edd09844d2bc2ff13b3e609801d02f043b16dc592356ddbd7f0914487a9b7dc",
-      "block": 11737354,
-      "gasUsed": 687828,
-      "nonce": 26,
+      "address": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
+      "tx": "0x56c89343e048dac13929196e752397dc793006b3f15821b7696e78cc54e662a2",
+      "block": 11740812,
+      "gasUsed": 687816,
+      "nonce": 42,
       "args": [
-        "0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9",
+        "0x20B92472C1e4F9EddD4976FA91232e58d2003FcE",
         "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
         "2592000",
         "1"
@@ -102,46 +102,16 @@
     "vkHash": "0xd700e6c18b1d3286e0114b6d9fa16121b85e88318bc80e396936e02081bd001c",
     "ceremony": "single-party test ceremony (pot15 reused from revision 1, fresh phase 2)"
   },
-  "superseded": {
-    "revision": 1,
-    "deployedAt": "2026-09-19",
-    "contracts": {
-      "KYASchemeRegistry": {
-        "address": "0xEe9BDEc0790Edd42fC0aB35fa6cF1966D85A4044",
-        "tx": "0x262cdb26d63808cb5e77e97fb71e00529e134ee8451122c93fdccda9594b833b",
-        "block": 11736593
-      },
-      "KYARegistry": {
-        "address": "0xBFCC1ABc83a0caC5E76348738c551BfAae0a09f5",
-        "tx": "0x041b2f049707b4c126e2c4241c1ab45f3dd49b4b0597ae5694d5e00a51ab89d4",
-        "block": 11736594
-      },
-      "KYAPolicyRegistry": {
-        "address": "0xeF72BF34e340DE3E2047fa8d226cF9Dc8c58eD93",
-        "tx": "0xe9bedaf8585be06be3817a942fb890c0eb211dfcd13c18267d9fefdfb02fd364",
-        "block": 11736595
-      },
-      "ValidationRegistry8004": {
-        "address": "0x281e9B657d89b0729e51B9031787A00870cAa9aa",
-        "tx": "0xdaa1815be71575cbfb5d4cd50197665005b84d1ccfab9d60eb4c91fd9da0cee0",
-        "block": 11736596
-      },
-      "KYABridge8004": {
-        "address": "0x44C1E906CEE7A3b336Ca23E58F0fae7d3AFbCe1A",
-        "tx": "0x99d6bc14fdf85bea0245482030ad7faf7cbead6419622bf512c3f3f0a84447f3",
-        "block": 11736597
-      },
-      "Groth16Verifier": {
-        "address": "0xF8a260a0b9443B03E8435ac21f22075976110f8C",
-        "tx": "0x875ae88f737c1903c4858b0adb0c61a21eb1c931054bf5d53f09e86e8ec38b44",
-        "block": 11736598
-      },
-      "Groth16KYAVerifierAdapter": {
-        "address": "0x540B7651FA94Cd586599Deb478893D800bc3C2d8",
-        "tx": "0x010836ab173965012478f9e896e0b78922e1131437085e0be149978167f3e7e6",
-        "block": 11736599
-      }
+  "superseded": [
+    {
+      "revision": 2,
+      "file": "deployments/sepolia-r2.json",
+      "note": "lacks binding witness/predicate, rulesHash, configHash, code-hash pinning; schemeIds not chain/registry-scoped"
     },
-    "note": "Revision 1 deployment kept for the record; its adapter/circuit lack the scheme-bound credential and epoch enforcement and MUST NOT be relied on."
-  }
+    {
+      "revision": 1,
+      "file": "deployments/sepolia-r1.json",
+      "note": "circuit rev 1 — do not rely on"
+    }
+  ]
 }

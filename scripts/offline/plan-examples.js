@@ -40,16 +40,16 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
   const aHash = ethers.keccak256(Buffer.from(JSON.stringify(attestedDesc)));
   const pHash = ethers.keccak256(Buffer.from(JSON.stringify(provedDesc)));
   // deterministic ids: fresh scheme registry → deployer nonces 0 and 1
-  const attestedScheme = ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [deployer, aHash, 0]));
-  const provedScheme = ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [deployer, pHash, 1]));
+  const attestedScheme = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [net.chainId, A.KYASchemeRegistry, deployer, aHash, 0]));
+  const provedScheme = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [net.chainId, A.KYASchemeRegistry, deployer, pHash, 1]));
 
   const plan = [];
   const add = (label, to, data, extra = {}) => plan.push({ label, nonce: nonce++, to, data, ...extra });
   const S = I("KYASchemeRegistry"), K = I("KYARegistry"), P = I("KYAPolicyRegistry"), B = I("KYABridge8004"), V = I("ValidationRegistry8004");
 
   // round A
-  add("registerScheme(attested)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(attestedDesc), aHash, 0, ethers.ZeroAddress, ethers.ZeroHash]), { round: "A" });
-  add("registerScheme(proved)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(provedDesc), pHash, 1, A.Groth16KYAVerifierAdapter, ethers.ZeroHash]), { round: "A" });
+  add("registerScheme(attested)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(attestedDesc), aHash, 0, 1, ethers.ZeroAddress, ethers.ZeroHash]), { round: "A" });
+  add("registerScheme(proved)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(provedDesc), pHash, 1, 1, A.Groth16KYAVerifierAdapter, ethers.ZeroHash]), { round: "A" });
   add("setMetadata(agentId,\"kya\")", net.identityRegistry, idAbi.encodeFunctionData("setMetadata", [agentId, "kya", coder.encode(["address", "bytes32[]"], [A.KYARegistry, [attestedScheme, provedScheme]])]), { round: "A" });
 
   // round B
@@ -69,20 +69,24 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
   if (!(await zk.verifyLocally(pr.publicSignals, pr.rawProof))) throw new Error("proof invalid");
   add("attestWithProof", A.KYARegistry, K.encodeFunctionData("attestWithProof", [subject, provedScheme, pr.publicInputs, pr.proof, dataUri({ layout: "kya-public-v1", circuit: "kya_public_v1 rev 2" })]), { round: "B" });
 
+  const rules = [{ schemeId: attestedScheme, minLevel: 2, issuers: [deployer] }, { schemeId: provedScheme, minLevel: 4, issuers: [A.Groth16KYAVerifierAdapter] }];
+  const rulesHash = ethers.keccak256(coder.encode(["tuple(bytes32 schemeId,uint8 minLevel,address[] issuers)[]"], [rules]));
   const policyDesc = { type: "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1", name: "demo counterparty baseline",
-    require: { allOf: [{ schemeId: attestedScheme, minLevel: 2, issuers: [deployer] }, { schemeId: provedScheme, minLevel: 4, issuers: [A.Groth16KYAVerifierAdapter], anchors: [set.rootHex] }] } };
+    require: { allOf: rules.map((r) => ({ ...r })) },
+    onchain: { evaluator: `eip155:${net.chainId}:${A.KYAPolicyRegistry}`, rulesHash, sufficient: true } };
   const polHash = ethers.keccak256(Buffer.from(JSON.stringify(policyDesc)));
-  const policyId = ethers.keccak256(coder.encode(["address", "bytes32", "uint256"], [deployer, polHash, 0]));
-  add("registerPolicyWithRules", A.KYAPolicyRegistry, P.encodeFunctionData("registerPolicyWithRules", [dataUri(policyDesc), polHash,
-    [{ schemeId: attestedScheme, minLevel: 2, issuers: [deployer] }, { schemeId: provedScheme, minLevel: 4, issuers: [A.Groth16KYAVerifierAdapter] }]]), { round: "B" });
-  add("bridge.configureScheme", A.KYABridge8004, B.encodeFunctionData("configureScheme", [attestedScheme, [deployer], [0, 25, 60, 100]]), { round: "B" });
-  const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), net.chainId, net.identityRegistry, A.KYABridge8004, agentId, attestedScheme]));
-  add("validationRequest(bridge)", A.ValidationRegistry8004, V.encodeFunctionData("validationRequest", [A.KYABridge8004, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: A.KYABridge8004, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash]), { round: "B" });
+  const policyId = ethers.keccak256(coder.encode(["address", "bytes32", "bytes32", "uint256"], [deployer, polHash, rulesHash, 0]));
+  add("registerPolicyWithRules", A.KYAPolicyRegistry, P.encodeFunctionData("registerPolicyWithRules", [dataUri(policyDesc), polHash, rules]), { round: "B" });
+  const trustedIssuers = [deployer], responseMap = [0, 25, 60, 100];
+  const configHash = ethers.keccak256(coder.encode(["bytes32", "address[]", "uint8[]"], [attestedScheme, trustedIssuers, responseMap]));
+  add("bridge.configureScheme", A.KYABridge8004, B.encodeFunctionData("configureScheme", [attestedScheme, trustedIssuers, responseMap]), { round: "B" });
+  const requestHash = ethers.keccak256(coder.encode(["bytes32", "uint256", "address", "address", "bytes32", "uint256", "bytes32"], [ethers.id("erc-kya-request-v1"), net.chainId, net.identityRegistry, A.KYABridge8004, configHash, agentId, attestedScheme]));
+  add("validationRequest(bridge)", A.ValidationRegistry8004, V.encodeFunctionData("validationRequest", [A.KYABridge8004, agentId, dataUri({ type: "erc-kya-request-v1", chainId: net.chainId.toString(), identityRegistry: net.identityRegistry, bridge: A.KYABridge8004, configHash, agentId: agentId.toString(), schemeId: attestedScheme }), requestHash]), { round: "B" });
   // round C
   add("bridge.sync", A.KYABridge8004, B.encodeFunctionData("sync", [agentId, attestedScheme]), { round: "C" });
 
-  const meta = { agentId: agentId.toString(), subjectKey, attestedScheme, provedScheme, policyId, requestHash, tag: "kya:" + attestedScheme.slice(2, 10), expiresAt, epoch: epoch.toString(),
-    descriptors: { attested: attestedDesc, proved: provedDesc, policy: policyDesc, hashes: { attested: aHash, proved: pHash, policy: polHash } },
+  const meta = { agentId: agentId.toString(), subjectKey, attestedScheme, provedScheme, policyId, rulesHash, configHash, requestHash, tag: "kya:" + attestedScheme.slice(2), expiresAt, epoch: epoch.toString(),
+    descriptors: { attested: attestedDesc, proved: provedDesc, policy: policyDesc, hashes: { attested: aHash, proved: pHash, policy: polHash, rules: rulesHash } },
     zk: { nullifier: pr.nullifier, publicInputs: pr.publicInputs, proof: pr.proof, publicSignals: pr.publicSignals, attestor: "kya-demo-issuer-bob (hidden on-chain)", issuerSetRoot: set.rootHex } };
   process.stdout.write(JSON.stringify({ meta, plan }, null, 1));
   process.exit(0);

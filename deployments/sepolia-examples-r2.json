@@ -1,8 +1,8 @@
 {
   "network": "sepolia",
   "chainId": "11155111",
-  "revision": 3,
-  "runAt": "2026-09-20",
+  "revision": 2,
+  "runAt": "2026-09-19",
   "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
   "agent": {
     "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
@@ -10,84 +10,78 @@
     "registerTx": "0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de",
     "block": 11736632,
     "subjectKey": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b0",
-    "note": "same ERC-8004 agent as revisions 1–2; owner = deployer, so the controller witness is keccak256(abi.encode(deployer))"
+    "note": "same ERC-8004 agent as revision 1 (registered then)"
   },
   "steps": {
     "registerSchemeAttested": {
-      "tx": "0xbe2d94541ed05f0ae655b7488a6089e72f0b169a85ea3365b5a23108b6a4b2f5",
-      "block": 11740832,
-      "gasUsed": 809124,
-      "nonce": 43,
-      "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-      "schemeIdPreimage": "abi.encode(chainId, KYASchemeRegistry, deployer, descriptorHash, 0)",
+      "tx": "0x8af326752e4bb57adc2bf12e044f5e7d79166337c378921aed83a97766b76fd9",
+      "block": 11737395,
+      "gasUsed": 788185,
+      "nonce": 27,
+      "schemeId": "0x3673f050219a78ab695de14ae60319a2934bb220d57eb9dbeba2a2ed77bc3681",
       "descriptorHash": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
-      "binding": "CONTROLLER (1)",
+      "binding": "controller",
       "result": "ordered-level"
     },
     "registerSchemeProved": {
-      "tx": "0xda1d04f2a5a21f3216d97241e19d908e32af939b96866bab607a1162faceb9a8",
-      "block": 11740832,
-      "gasUsed": 1273921,
-      "nonce": 44,
-      "schemeId": "0x63fe9b9c75341680bbb485692e0dd011c0dcefe68b026307c48aa3cbf150e27c",
+      "tx": "0x88522daffaeaf4e70174e4c48097fd127bc59ff5d39094208ab449d3442d8d2d",
+      "block": 11737395,
+      "gasUsed": 1250331,
+      "nonce": 28,
+      "schemeId": "0xe4e030f4af9d9bfdd50e0517985dfc4689572f94c02b6bce4def064fcc9e5626",
       "descriptorHash": "0xafdefbb58891822fe879e9612682a7602450c7c7996188e0bd4722af80bd94af",
-      "binding": "CONTROLLER (1)",
-      "verifier": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
-      "verifierCodehashPinned": true,
+      "verifier": "0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD",
       "epochSeconds": 2592000,
       "epochGrace": 1
     },
     "setMetadataKya": {
-      "tx": "0x1cdfbb7c1c9aa55a37f7ebc7a77c2f5c0e5c09d541d9e56314ae925035e0e724",
-      "block": 11740832,
+      "tx": "0xf7c1985b57d54a041e4f1f05ff6520a571833772d86831acf073fdda01da656f",
+      "block": 11737395,
       "gasUsed": 60384,
-      "nonce": 45,
+      "nonce": 29,
       "key": "kya",
       "value": "abi.encode(KYARegistry, [attestedScheme, provedScheme])"
     },
     "attest": {
-      "tx": "0x591d8d4e78664d904b8337a0f60cf5a1e795869b262aa0c3c092a78c2c6d0876",
-      "block": 11740837,
-      "gasUsed": 469598,
-      "nonce": 46,
-      "assertionId": "0xc5015eba43b4ebe93f5a549231d1ea3cf2970315e667463077400fbb2695b233",
+      "tx": "0x44fb70fefec69e6e114226226fbad4da51ccc49152124f3a8d794bd04a5133ac",
+      "block": 11737399,
+      "gasUsed": 321227,
+      "nonce": 30,
+      "assertionId": "0x0560035707f1974718095b4768d02ad52435712ad24f834232d4fcfe8b497360",
       "level": 2,
       "issuer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-      "expiresAt": 1797637684,
-      "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
+      "expiresAt": 1797592872,
       "verified": {
-        "bindingStatus": "SATISFIED (1)",
-        "resolve (complete)": 2,
+        "resolve": 2,
         "check(minLevel 2)": true
       }
     },
     "attestWithProof": {
-      "tx": "0x7027a7e03064fe893fd566f4c7f38f298d5e3d7a8553aa4d603c25ff360673df",
-      "block": 11740837,
-      "gasUsed": 847288,
-      "nonce": 47,
-      "assertionId": "0x00fe16dd0cd5b3a0c0087f3d45cf6cda27858400808ac09be2c4cfd47c2d23e3",
+      "tx": "0x9d52d732321a29c0a8c463530bb23fdad92bc7eef83ea8cf2f96e5f51454ef0c",
+      "block": 11737399,
+      "gasUsed": 698779,
+      "nonce": 31,
+      "assertionId": "0xabb211b3002ccd80c34ae19339a4e6006efb06ea4bc2a5179c59122ea52630b0",
       "level": 4,
-      "issuer": "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061",
+      "issuer": "0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD",
       "anchor": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
-      "bindingWitness": "0x9d06829b78cd511e4b4be91c222a7fcd3302d27e10ef7921bfba3c14a8ba44da",
       "epoch": "690",
-      "nullifier": "0x0552d9e6a35129dfbef8598b83d2d1a1f7c8004a36a4562ada821cfaef8a70e3",
-      "publicInputs": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b00552d9e6a35129dfbef8598b83d2d1a1f7c8004a36a4562ada821cfaef8a70e30000000000000000000000000000000000000000000000000000000000000004a60eda95a8f3721d347b926dae30576e0d6cbd8b08010db4c12ceaaefad6b32d000000000000000000000000000000000000000000000000000000006b25c6341de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e800000000000000000000000000000000000000000000000000000000000002b2",
-      "proof": "0x2377d5294577cf4b6a0d7e79aebc2f0fc91c4e2f22796051e4bbfcb2d83b453d2b5678f697b8aa10eae6bf058e349cd05a061d94d81d04f8edf8367453e5968109a16e9c4d92591afa12b54ce1994425e1bbcfc8c47eb2d7491f5c588490d1e90fc3e83ba1e0886a656fe6a8d4d1dd93800232459b925261ecd9a32fc4df0efd2d98c372f3ec9d4ea97d52571ec8b7100f7ac137e008df0c96bb5954c16934321e496159a0d0e950949754c3ff125575a6dd5565281725cfd03ecc0ce420bd080d46ff7b68b97ce22506faaaff9cf7c61398d7a65f7c92eed5210cad092b8595235c03731718aba42b3104b9c80b0f4ddf5e59a08cd1c34c38318aa2bde2314a",
+      "nullifier": "0x04346f18f4ef20a568bd3742a7f4be1bccc3e887a41a7fbc2626606b770b4252",
+      "publicInputs": "0x844be51d9553da0d519720570e3f6f3e58aa13f94471cf842654af76c28e29b004346f18f4ef20a568bd3742a7f4be1bccc3e887a41a7fbc2626606b770b42520000000000000000000000000000000000000000000000000000000000000004a60eda95a8f3721d347b926dae30576e0d6cbd8b08010db4c12ceaaefad6b32d000000000000000000000000000000000000000000000000000000006b2517281de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e800000000000000000000000000000000000000000000000000000000000002b2",
+      "proof": "0x1dcac1436ca097c5331aeb22089f1fc71907d041821be907985554b8a357fffa1162f928633cceb89b1907c1acef1ecd77ba23b2f7b35fd0778071867000b5931cfefb4ae2c7bb3c464eaffceed01e40c3883427afe21bf45bcd04693d4e8f8909dbd734fe229088e59cc98615a6f9944a8fc6a6b7684ec8304127df41c398c502d64f06e613460cc93f11ba6de0c46d0115825aa78bad4d333a80088135cb211f934504d854ef9eb36b321fbcce67c2ca7e409f3afba45a5b4dd9cd06be64cc1bcbb39ac7564d746413989c7283c0aea4a32c6f2da9b3e79891617e15b1d5832897a34c953e1135acb9db0b2dfd98970fe74e0edfd1d69e7032a703296c9e41",
       "publicSignals": [
-        "7076327877229983260016783444187206049",
-        "329357780210376073467302814969747894499",
+        "5589164744528810040343540882480610843",
+        "272179725293154692966454790541095420498",
         "175852164723629593469623764714218549054",
         "117855159209801022199005436383192820144",
         "4",
         "220728972878893122691038849918202566510",
         "17844576396532501109572181257931371309",
-        "1797637684",
+        "1797592872",
         "39711533459011723055531477847338844803",
         "40830941689831994963270280925314069992",
-        "132915571154129152427764802044774174737",
-        "256358946260975462580214153170899755644",
+        "304228050476955663893135756243890994246",
+        "182556930307719043125935952490399684134",
         "690"
       ],
       "attestor": "kya-demo-issuer-bob (hidden on-chain)",
@@ -97,26 +91,23 @@
       }
     },
     "policy": {
-      "tx": "0x98618cd84a6b02c9731cf58153b3cb535cb9edce411f8d54bb252322c91b66c1",
-      "block": 11740837,
-      "gasUsed": 986441,
-      "nonce": 48,
-      "policyId": "0xe9d31e2f702d2354fb78510bd01a1d2242d78c33973a3af3109f136094d078c1",
-      "policyIdPreimage": "abi.encode(deployer, policyHash, rulesHash, 0)",
-      "descriptorHash": "0x5cf0a34d62056034cf6cee31c633df3d9397e866768ed30f8c2953ee8d241f1c",
-      "rulesHash": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1",
-      "rules": "allOf[attested>=2 by deployer, proved>=4 by adapter]",
+      "tx": "0xb9f635979ddcd43baed010955448d9f3533e56c94401cc27e13940f508dfb901",
+      "block": 11737399,
+      "gasUsed": 869677,
+      "nonce": 32,
+      "policyId": "0xc47cf45ff08236a20446428647581b9cd13c04bfdb2c4db61ee961f33b568856",
+      "descriptorHash": "0x97070c8db4fb4329a259fa85b429c4f701a2e1cbeabf7448aad5e7ea5b2415c3",
+      "rules": "allOf[attested>=2 by deployer, proved>=4 by adapter (anchor pinned)]",
       "verified": {
-        "getPolicy().rulesHash == rulesHash": true,
         "evaluate": true
       }
     },
     "bridgeConfigure": {
-      "tx": "0x1d123fa9c107d4c2a2e295f7670ff0e41a2e91f1ea4e0d48563c1826bb419333",
-      "block": 11740837,
-      "gasUsed": 178418,
-      "nonce": 49,
-      "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
+      "tx": "0x19b76d05ec8b6ff28275008f37aa727b8ee71e346c6d4267bd75db4aefa1ec20",
+      "block": 11737399,
+      "gasUsed": 154630,
+      "nonce": 33,
+      "schemeId": "0x3673f050219a78ab695de14ae60319a2934bb220d57eb9dbeba2a2ed77bc3681",
       "trustedIssuers": [
         "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
       ],
@@ -125,29 +116,25 @@
         25,
         60,
         100
-      ],
-      "configHash": "0x46abfbe509b7cb9db008feccbaddf95aedc0aa3ee6486e183117958da7d71f16"
+      ]
     },
     "validationRequest": {
-      "tx": "0x3ae75510207caadb09e2061cb132578b925a70eae871516ae297521c4d054051",
-      "block": 11740837,
-      "gasUsed": 213392,
-      "nonce": 50,
-      "requestHash": "0x2630e234308cd9a866a0af0fa69c7915c7a53264652b75722dd2ca7a80bbe4f0",
-      "preimage": "abi.encode(keccak256(\"erc-kya-request-v1\"), chainId, identityRegistry, bridge, configHash, agentId, schemeId)"
+      "tx": "0xc7de5adff03fed1a4ca6c38f575074c307437ad991911318406c125bba9b5b1f",
+      "block": 11737399,
+      "gasUsed": 210937,
+      "nonce": 34,
+      "requestHash": "0x71a2e190c40c712878dd66639ab8a51abe11f72b2352fc43df144c92d8dd2d87",
+      "preimage": "abi.encode(keccak256(\"erc-kya-request-v1\"), chainId, identityRegistry, bridge, agentId, schemeId)"
     },
     "bridgeSync": {
-      "tx": "0xc45f43ba441948f66e92eca3ba0a5be9a0a33dc61d28c6f267e072b3c7280c4c",
-      "block": 11740840,
-      "gasUsed": 366843,
-      "nonce": 51,
+      "tx": "0xc47db8f5b007ecb194d1348f3317fd472d08e701592ab8a0c3d0c601a946e6d7",
+      "block": 11737402,
+      "gasUsed": 165300,
+      "nonce": 35,
       "response": 60,
-      "tag": "kya:952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
-      "responseHash": "0x9390ed4728ffba15b5dcd5bc1e6409d4f6fa0bd9ae04f8ee6aadd8ce7b76cbda",
-      "responseHashPreimage": "abi.encode(assertionId, level, configHash)",
+      "tag": "kya:3673f050",
       "verified": {
         "getValidationStatus.response": 60,
-        "getValidationStatus.responseHash == expected": true,
         "getSummary(agentId,[bridge],tag)": {
           "count": 1,
           "averageResponse": 60
@@ -267,32 +254,29 @@
       "require": {
         "allOf": [
           {
-            "schemeId": "0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676",
+            "schemeId": "0x3673f050219a78ab695de14ae60319a2934bb220d57eb9dbeba2a2ed77bc3681",
             "minLevel": 2,
             "issuers": [
               "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
             ]
           },
           {
-            "schemeId": "0x63fe9b9c75341680bbb485692e0dd011c0dcefe68b026307c48aa3cbf150e27c",
+            "schemeId": "0xe4e030f4af9d9bfdd50e0517985dfc4689572f94c02b6bce4def064fcc9e5626",
             "minLevel": 4,
             "issuers": [
-              "0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061"
+              "0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD"
+            ],
+            "anchors": [
+              "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
             ]
           }
         ]
-      },
-      "onchain": {
-        "evaluator": "eip155:11155111:0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf",
-        "rulesHash": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1",
-        "sufficient": true
       }
     },
     "hashes": {
       "attested": "0x1b5426af551ceb747c2b5cceb060a4b66f7c4ef6472884464fa1431219b920eb",
       "proved": "0xafdefbb58891822fe879e9612682a7602450c7c7996188e0bd4722af80bd94af",
-      "policy": "0x5cf0a34d62056034cf6cee31c633df3d9397e866768ed30f8c2953ee8d241f1c",
-      "rules": "0xad25787d5ef9d573c38d2f2ad1d1d21766441e3bfda8f6c0ebd9eba31f7242c1"
+      "policy": "0x97070c8db4fb4329a259fa85b429c4f701a2e1cbeabf7448aad5e7ea5b2415c3"
     }
   },
   "ownership": {

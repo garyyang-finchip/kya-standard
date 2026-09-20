@@ -36,8 +36,8 @@ assets/erc-kya/
 tools/compile.js                    solc-js build → build/artifacts.json
 tools/vectors.js                    regenerates vectors.json
 tools/prepare-pr.sh                 lays the files out as an ethereum/ERCs PR
-test/kya.test.js                    in-process EVM end-to-end suite (18 cases, no RPC needed)
-test/zk.test.js                     real Groth16 proof → Verifier.sol → adapter → KYARegistry, incl. adversarial cases (14 cases)
+test/kya.test.js                    in-process EVM end-to-end suite (18 cases + 6 revision-3 regression cases, no RPC needed)
+test/zk.test.js                     real Groth16 proof → Verifier.sol → adapter → KYARegistry, incl. adversarial + cross-registry cases (15 cases)
 companions/zk-kya-groth16/          EXPERIMENTAL reference ZK-KYA circuit (circom) + prover tooling + built keys
 scripts/deploy-sepolia.js           deploys the stack to Sepolia against the official ERC-8004 IdentityRegistry
 scripts/examples-sepolia.js         six worked examples on Sepolia (agent, schemes, attested, ZK, policy, bridge)
@@ -48,7 +48,7 @@ scripts/examples-sepolia.js         six worked examples on Sepolia (agent, schem
 ```bash
 npm install
 node tools/compile.js        # solc 0.8.28, optimizer on, cancun
-node test/kya.test.js        # 18 end-to-end tests on an in-process EVM
+node test/kya.test.js        # 24 end-to-end tests on an in-process EVM
 node tools/vectors.js        # regenerate assets/erc-kya/vectors/vectors.json
 npm run test:zk              # ZK companion end-to-end with a real Groth16 proof (uses the shipped test zkey)
 ```
@@ -64,21 +64,21 @@ npm run examples:sepolia     # → deployments/sepolia-examples.json (every tx h
 
 The deployment binds to the **official ERC-8004 IdentityRegistry on Sepolia** (`0x8004A818BFB912233c491871b3d84c89A494BD9e`); the demo agent is a real ERC-8004 agent. Because the canonical ERC-8004 Validation Registry is not yet deployed on any public network, the companion deploys a spec-conforming `ValidationRegistry8004` bound to that identity registry so the KYA Bridge can be exercised end to end. The ZK example uses the shipped **test-ceremony** keys and three demo attestors derived from public seeds — reproducible by anyone, secure for no one.
 
-### Deployed addresses (revision 2, current)
+### Deployed addresses (revision 3, current)
 
-Deployed 2026-09-19 (chainId 11155111) after the external design review. Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json). The revision-1 deployment (same day, earlier) is kept in `deployments/sepolia-r1.json` / `sepolia-examples-r1.json` for the record and **must not be relied on**: its circuit lacks the scheme-bound credential and its adapter does not enforce the epoch window.
+Deployed 2026-09-20 (chainId 11155111) after the second external review. Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json). Earlier deployments are kept for the record (`sepolia-r1.json`, `sepolia-r2.json` and their `-examples` files) and **must not be relied on**.
 
 | contract | address | block |
 |---|---|---|
-| KYASchemeRegistry | [`0xAc7B642a5760467178F20c984f02cc72CCCa8E3f`](https://sepolia.etherscan.io/address/0xAc7B642a5760467178F20c984f02cc72CCCa8E3f) | 11737350 |
-| KYARegistry | [`0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f`](https://sepolia.etherscan.io/address/0xeBf357c87639aCcC0DaA505fAAf3F6E9b079AB9f) | 11737350 |
-| KYAPolicyRegistry | [`0x9B53BAD4346AacB34Bac328F1d856dfa2F246cfF`](https://sepolia.etherscan.io/address/0x9B53BAD4346AacB34Bac328F1d856dfa2F246cfF) | 11737350 |
-| ValidationRegistry8004 | [`0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53`](https://sepolia.etherscan.io/address/0x4aD87d7D55C753c53A801ca9a23495fb4f9bAd53) | 11737351 |
-| KYABridge8004 | [`0xCcd683927d1fC03A0163B3e9FbE7fC44afFbA5e4`](https://sepolia.etherscan.io/address/0xCcd683927d1fC03A0163B3e9FbE7fC44afFbA5e4) | 11737354 |
-| Groth16Verifier (circuit rev 2) | [`0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9`](https://sepolia.etherscan.io/address/0xBaE26c2a9b23c37Da76c4905F9F09004dFDBc7a9) | 11737354 |
-| Groth16KYAVerifierAdapter (epoch 30 d, grace 1, pinned root) | [`0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD`](https://sepolia.etherscan.io/address/0xbC2E1A0FF358B64288a7D4157B996C72b6Ad44cD) | 11737354 |
+| KYASchemeRegistry | [`0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75`](https://sepolia.etherscan.io/address/0x9b11BF52d64Bc3933D974A6461CfdE733a11AA75) | 11740808 |
+| KYARegistry | [`0xcac761d7AD0C99a1df65a239c599a004Dd16028f`](https://sepolia.etherscan.io/address/0xcac761d7AD0C99a1df65a239c599a004Dd16028f) | 11740808 |
+| KYAPolicyRegistry | [`0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf`](https://sepolia.etherscan.io/address/0x68016fdC949f81025d5D91Ce2016F8ae55bc18Cf) | 11740808 |
+| ValidationRegistry8004 | [`0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3`](https://sepolia.etherscan.io/address/0xecB7e39A6845B1e204F1d42746C676b0c8af0BD3) | 11740808 |
+| KYABridge8004 | [`0x4965e40900CBE94293dC43846C289eE2E13c32E9`](https://sepolia.etherscan.io/address/0x4965e40900CBE94293dC43846C289eE2E13c32E9) | 11740812 |
+| Groth16Verifier (circuit rev 2) | [`0x20B92472C1e4F9EddD4976FA91232e58d2003FcE`](https://sepolia.etherscan.io/address/0x20B92472C1e4F9EddD4976FA91232e58d2003FcE) | 11740812 |
+| Groth16KYAVerifierAdapter (epoch 30 d, grace 1, pinned root) | [`0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061`](https://sepolia.etherscan.io/address/0x23bceea25a69Ce9B3B5CC5a4D8dc3DfEf0967061) | 11740812 |
 
-Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387** ([register tx](https://sepolia.etherscan.io/tx/0xafb9f5eeac1e34500707f12a48ed75fc8e71681b948bff1c65ed0d2ebf5b36de)). Schemes: attested `0x3673f050219a78ab695de14ae60319a2934bb220d57eb9dbeba2a2ed77bc3681` (binding `controller`, ordered-level), proved (ZK) `0xe4e030f4af9d9bfdd50e0517985dfc4689572f94c02b6bce4def064fcc9e5626`. Worked examples: [setMetadata "kya"](https://sepolia.etherscan.io/tx/0xf7c1985b57d54a041e4f1f05ff6520a571833772d86831acf073fdda01da656f) · [attest](https://sepolia.etherscan.io/tx/0x44fb70fefec69e6e114226226fbad4da51ccc49152124f3a8d794bd04a5133ac) · [attestWithProof (Groth16, epoch 690, anchor = issuer-set root)](https://sepolia.etherscan.io/tx/0x9d52d732321a29c0a8c463530bb23fdad92bc7eef83ea8cf2f96e5f51454ef0c) · [policy](https://sepolia.etherscan.io/tx/0xb9f635979ddcd43baed010955448d9f3533e56c94401cc27e13940f508dfb901) · bridge [configure](https://sepolia.etherscan.io/tx/0x19b76d05ec8b6ff28275008f37aa727b8ee71e346c6d4267bd75db4aefa1ec20) → [request](https://sepolia.etherscan.io/tx/0xc7de5adff03fed1a4ca6c38f575074c307437ad991911318406c125bba9b5b1f) → [sync](https://sepolia.etherscan.io/tx/0xc47db8f5b007ecb194d1348f3317fd472d08e701592ab8a0c3d0c601a946e6d7) (mirrored 60/100 under tag `kya:3673f050`).
+Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387**. Schemes (ids now embed chainId + registry): attested `0x952fa40d0a5836d65a8049b3e0f051c489c9c6d8f62bbb9f6c8d16b18917a676` (binding `controller`, ordered-level), proved (ZK) `0x63fe9b9c75341680bbb485692e0dd011c0dcefe68b026307c48aa3cbf150e27c`. Worked examples: [setMetadata "kya"](https://sepolia.etherscan.io/tx/0x1cdfbb7c1c9aa55a37f7ebc7a77c2f5c0e5c09d541d9e56314ae925035e0e724) · [attest](https://sepolia.etherscan.io/tx/0x591d8d4e78664d904b8337a0f60cf5a1e795869b262aa0c3c092a78c2c6d0876) (controller witness recorded, `bindingStatus` = SATISFIED) · [attestWithProof (Groth16, epoch 690, anchor = issuer-set root)](https://sepolia.etherscan.io/tx/0x7027a7e03064fe893fd566f4c7f38f298d5e3d7a8553aa4d603c25ff360673df) · [policy (policyId commits rulesHash)](https://sepolia.etherscan.io/tx/0x98618cd84a6b02c9731cf58153b3cb535cb9edce411f8d54bb252322c91b66c1) · bridge [configure (configHash)](https://sepolia.etherscan.io/tx/0x1d123fa9c107d4c2a2e295f7670ff0e41a2e91f1ea4e0d48563c1826bb419333) → [request](https://sepolia.etherscan.io/tx/0x3ae75510207caadb09e2061cb132578b925a70eae871516ae297521c4d054051) → [sync](https://sepolia.etherscan.io/tx/0xc45f43ba441948f66e92eca3ba0a5be9a0a33dc61d28c6f267e072b3c7280c4c) (60/100 under the full-schemeId tag, `responseHash = H(assertionId, level, configHash)`).
 
 Ownership: bridge owner and both scheme controllers are still the deployer key until the maintainer supplies an address; the transfer transactions will be recorded in `deployments/ownership.json`.
 
@@ -88,11 +88,14 @@ Ownership: bridge owner and both scheme controllers are still the deployer key u
 |---|---|
 | `subjectKey` | `keccak256(abi.encode(subjectType, subjectData))` |
 | `erc8004` subject | `subjectType = keccak256("erc8004")`, `subjectData = abi.encode(chainId, identityRegistry, agentId)` |
-| `schemeId` | `keccak256(abi.encode(controller, schemeHash, controllerNonce))` |
+| `schemeId` | `keccak256(abi.encode(chainId, schemeRegistry, controller, schemeHash, controllerNonce))` |
 | `assertionId` | `keccak256(abi.encode(subjectKey, schemeId, issuer, issuerNonce))` |
-| `policyId` | `keccak256(abi.encode(owner, policyHash, ownerNonce))` |
-| bridge `requestHash` | `keccak256(abi.encode(keccak256("erc-kya-request-v1"), chainId, identityRegistry, bridge, agentId, schemeId))` |
-| bridge `tag` | `"kya:" + first 8 lowercase hex chars of schemeId` |
+| `policyId` | `keccak256(abi.encode(owner, policyHash, rulesHash, ownerNonce))`, `rulesHash = keccak256(abi.encode(Rule[] allOf))` or `0x0` |
+| binding witness | `controller`: `keccak256(abi.encode(ownerOf(agentId)))` at issuance · `instance`: `claimDigest` · `identity`: `0x0` |
+| bridge `configHash` | `keccak256(abi.encode(schemeId, trustedIssuers, responseMap))` |
+| bridge `requestHash` | `keccak256(abi.encode(keccak256("erc-kya-request-v1"), chainId, identityRegistry, bridge, configHash, agentId, schemeId))` |
+| bridge `responseHash` | `keccak256(abi.encode(assertionId, level, configHash))` |
+| bridge `tag` | `"kya:" + full schemeId as 64 lowercase hex chars` |
 | ZK `publicInputs` (kya-public-v1) | `abi.encode(subjectKey, nullifier, level, claimDigest, expiresAt, issuerSetRoot, epoch)` — adapter appends `schemeId` as signals (13 total) and enforces `current-epochGrace ≤ epoch ≤ current` |
 | ZK credential (rev 2) | attestor signs `Poseidon(subjectKey.hi, .lo, schemeId.hi, .lo, level, claimDigest.hi, .lo, expiresAt, Poseidon(secret))` |
 
