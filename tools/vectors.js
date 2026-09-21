@@ -118,7 +118,7 @@ const interfaceIds = {
 };
 
 const vectors = {
-  _comment: "Deterministic vectors for ERC-KYA (placeholder number 9999). Regenerate with `node tools/vectors.js`.",
+  _comment: "Deterministic vectors for ERC-KYA (ERC-8419). Regenerate with `node tools/vectors.js`.",
   subjectTypes: SUBJECT_TYPES,
   subject: { chainId: chainId.toString(), identityRegistry, agentId: agentId.toString(), subjectType: SUBJECT_TYPES.erc8004, subjectData, subjectKey },
   scheme: { chainId: chainId.toString(), schemeRegistry, controller, schemeHash, nonce: schemeNonce.toString(), schemeId, schemeIdPreimage: "abi.encode(chainId, schemeRegistry, controller, schemeHash, nonce)", descriptorKeccak: "keccak256 of the raw bytes of example-scheme.json", binding: "controller (1)", bindingWitnessExample: { controller: "0x8888888888888888888888888888888888888888", witness: ethers.keccak256(coder.encode(["address"], ["0x8888888888888888888888888888888888888888"])) } },

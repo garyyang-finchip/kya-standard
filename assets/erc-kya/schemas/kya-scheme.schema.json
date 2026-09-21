@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://eips.ethereum.org/assets/eip-9999/schemas/kya-scheme.schema.json",
+  "$id": "https://eips.ethereum.org/assets/eip-8419/schemas/kya-scheme.schema.json",
   "title": "KYA Scheme Descriptor v1",
   "description": "Off-chain descriptor referenced by IKYASchemeRegistry.Scheme.schemeURI. Holds the KYA principle; the chain holds only its address, hash, mode and verifier. Semantics are immutable per schemeId: a changed descriptor is a new scheme with `predecessor` set.",
   "type": "object",
@@ -17,7 +17,7 @@
   "additionalProperties": true,
   "properties": {
     "type": {
-      "const": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1"
+      "const": "https://eips.ethereum.org/EIPS/eip-8419#kya-scheme-v1"
     },
     "name": {
       "type": "string",

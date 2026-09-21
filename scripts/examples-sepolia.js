@@ -47,7 +47,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   // ---- 2. schemes ------------------------------------------------------------------------------
   console.log("\n2. schemes");
   const attestedDesc = {
-    type: "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1", name: "Controller Binding (attested) v1",
+    type: "https://eips.ethereum.org/EIPS/eip-8419#kya-scheme-v1", name: "Controller Binding (attested) v1",
     description: "Issuer checked that the agent's endpoint and wallet are controlled by one operator.", version: "1.0.0", mode: "attested", binding: "controller", result: { kind: "ordered-level" },
     dimensions: ["controller-binding"], levels: { "0": { label: "not verified", erc8004Response: 0 }, "1": { label: "self-asserted", erc8004Response: 25 }, "2": { label: "controller-linked", erc8004Response: 60 }, "3": { label: "independently verified", erc8004Response: 100 } },
     evidenceKinds: ["domain-proof", "erc8004-validation"], issuerPolicy: { kind: "open" },
@@ -58,7 +58,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   console.log(`  attested schemeId ${attestedScheme}`);
 
   const provedDesc = {
-    type: "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1", name: "Accountable Operator (ZK) v1",
+    type: "https://eips.ethereum.org/EIPS/eip-8419#kya-scheme-v1", name: "Accountable Operator (ZK) v1",
     description: "Proves, without disclosure, that a member of the pinned issuer set attested accountability for the agent.", version: "1.0.0", mode: "proved", binding: "controller", result: { kind: "ordered-level" },
     dimensions: ["accountability", "compliance"], levels: { "0": { label: "not verified", erc8004Response: 0 }, "4": { label: "accountable", erc8004Response: 100 } },
     evidenceKinds: ["zk-proof"], issuerPolicy: { kind: "verifier-only" },
@@ -110,7 +110,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
 
   // ---- 5. policy --------------------------------------------------------------------------------
   console.log("\n5. policy");
-  const policyDesc = { type: "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1", name: "demo counterparty baseline",
+  const policyDesc = { type: "https://eips.ethereum.org/EIPS/eip-8419#kya-policy-v1", name: "demo counterparty baseline",
     require: { allOf: [{ schemeId: attestedScheme, minLevel: 2, issuers: [wallet.address] }, { schemeId: provedScheme, minLevel: 4, issuers: [dep.contracts.Groth16KYAVerifierAdapter.address] }] } };
   const rules = [{ schemeId: attestedScheme, minLevel: 2, issuers: [wallet.address] }, { schemeId: provedScheme, minLevel: 4, issuers: [dep.contracts.Groth16KYAVerifierAdapter.address] }];
   policyDesc.onchain = { evaluator: `eip155:${net.chainId}:${dep.contracts.KYAPolicyRegistry.address}`, rulesHash: await policies.rulesHashOf(rules), sufficient: true };

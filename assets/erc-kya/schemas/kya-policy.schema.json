@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://eips.ethereum.org/assets/eip-9999/schemas/kya-policy.schema.json",
+  "$id": "https://eips.ethereum.org/assets/eip-8419/schemas/kya-policy.schema.json",
   "title": "KYA Policy Descriptor v1",
   "description": "A relying party's requirement over (scheme, level, issuers, anchors) combinations. Referenced by IKYAPolicyRegistry policyURI and by KYAChallenge.policyId.",
   "type": "object",
@@ -10,7 +10,7 @@
   ],
   "properties": {
     "type": {
-      "const": "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1"
+      "const": "https://eips.ethereum.org/EIPS/eip-8419#kya-policy-v1"
     },
     "name": {
       "type": "string"

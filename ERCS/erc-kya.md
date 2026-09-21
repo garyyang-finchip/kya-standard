@@ -1,9 +1,9 @@
 ---
-eip: 9999
+eip: 8419
 title: Know-Your-Agent (KYA) Framework
 description: Scheme-agnostic registries and handshake for trust assertions about AI agents, with a zero-knowledge profile and agent-registry binding
 author: Gary Yang (@garyyang-finchip)
-discussions-to: https://ethereum-magicians.org/t/draft-erc-know-your-agent-kya-framework-trust-assertions-for-agents-zk-kya-profile-erc-8004-binding/29735
+discussions-to: https://ethereum-magicians.org/t/erc-8419-know-your-agent-kya-framework/29735
 status: Draft
 type: Standards Track
 category: ERC
@@ -158,11 +158,11 @@ Rules:
 
 #### 3.1 Scheme Descriptor
 
-`schemeURI` MUST resolve to a JSON document conforming to the schema in [`kya-scheme.schema.json`](../assets/eip-9999/schemas/kya-scheme.schema.json). Required members are `type`, `name`, `description`, `version`, `mode`, `binding`, `result` and `dimensions`; `levels` is additionally REQUIRED when `result.kind` is `"ordered-level"`, and `circuit` when `mode` is `"proved"`.
+`schemeURI` MUST resolve to a JSON document conforming to the schema in [`kya-scheme.schema.json`](../assets/eip-8419/schemas/kya-scheme.schema.json). Required members are `type`, `name`, `description`, `version`, `mode`, `binding`, `result` and `dimensions`; `levels` is additionally REQUIRED when `result.kind` is `"ordered-level"`, and `circuit` when `mode` is `"proved"`.
 
 ```json
 {
-  "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
+  "type": "https://eips.ethereum.org/EIPS/eip-8419#kya-scheme-v1",
   "name": "Accountable Operator (ZK) v1",
   "description": "Proves, without disclosure, that an identified legal entity stands behind the agent's ERC-8004 registration.",
   "version": "1.0.0",
@@ -367,11 +367,11 @@ Partial satisfaction is a policy question: a presentation that covers some but n
 - Mutual KYA is two independent challenge/presentation exchanges.
 - Transport bindings (HTTP POST, A2A message extension, MCP initialisation metadata) are informative here and MAY be specified by companion documents.
 
-**Discovery.** An agent MAY publish `https://{domain}/.well-known/kya.json` conforming to [`kya-discovery.schema.json`](../assets/eip-9999/schemas/kya-discovery.schema.json):
+**Discovery.** An agent MAY publish `https://{domain}/.well-known/kya.json` conforming to [`kya-discovery.schema.json`](../assets/eip-8419/schemas/kya-discovery.schema.json):
 
 ```json
 {
-  "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-discovery-v1",
+  "type": "https://eips.ethereum.org/EIPS/eip-8419#kya-discovery-v1",
   "kyaRegistry": "eip155:1:0x4444444444444444444444444444444444444444",
   "presentableSchemes": ["0x496a268d899db6a77e2e6c2716b129c1635a06b1d2738b83a906f21390e4cb8f"],
   "acceptedPolicies": ["0x0000000000000000000000000000000000000000000000000000000000000001"],
@@ -403,7 +403,7 @@ interface IKYAPolicyEvaluator /* is IERC165 */ {         // OPTIONAL extension
 ```
 
 - `policyId` MUST equal `keccak256(abi.encode(msg.sender, policyHash, rulesHash, nonce))` with a per-owner counter, where `rulesHash` is the commitment to the executable projection registered with the policy, or `0x0` when none is. One `policyId` therefore identifies one policy document and one exact executable projection; a stricter document cannot share an id with a weaker projection.
-- `policyURI` MUST resolve to a document conforming to [`kya-policy.schema.json`](../assets/eip-9999/schemas/kya-policy.schema.json): a tree of `allOf` / `anyOf` nodes over rules `{schemeId, minLevel | level, issuers[], anchors[]?}`; `issuers` MUST be non-empty in every rule. Rules over `ordered-level` schemes use `minLevel`; rules over `categorical` schemes use `level` (equality); `anchors`, when present, restricts proved assertions to the listed trust anchors.
+- `policyURI` MUST resolve to a document conforming to [`kya-policy.schema.json`](../assets/eip-8419/schemas/kya-policy.schema.json): a tree of `allOf` / `anyOf` nodes over rules `{schemeId, minLevel | level, issuers[], anchors[]?}`; `issuers` MUST be non-empty in every rule. Rules over `ordered-level` schemes use `minLevel`; rules over `categorical` schemes use `level` (equality); `anchors`, when present, restricts proved assertions to the listed trust anchors.
 - **Executable projection.** On-chain evaluation is OPTIONAL and lives in `IKYAPolicyEvaluator`, so a client can detect via ERC-165 whether a registry evaluates or merely stores. The projection this interface can express is exactly: a top-level conjunction of rules over `ordered-level` schemes, each with a `minLevel` and a non-empty issuer list. `rulesHash` MUST equal `keccak256(abi.encode(allOf))` over the canonical ABI encoding of the `Rule[]`. A descriptor that advertises an on-chain projection MUST carry the same `rulesHash` (schema member `onchain.rulesHash`) and MUST NOT contain conditions the projection cannot express (`anyOf`, `level` equality, `anchors`) unless it also states that on-chain `evaluate` is a necessary-but-not-sufficient check. Committing two hashes does not by itself make document and projection equivalent; the correspondence is the descriptor author's claim, verifiable by anyone who compares the document's top-level `allOf` with `getRules`. `evaluate` MUST compute the stored rules as a conjunction of complete `IKYARegistry.check` calls (so binding predicates are included) and MUST revert if no rules are stored. Off-chain evaluation over the full tree is the general case.
 
 ### 8. ERC-8004 Binding Profile
@@ -491,7 +491,7 @@ No changes to ERC-8004 contracts are required. All ERC-8004 interactions use the
 
 ## Test Cases
 
-Deterministic vectors are provided in [`vectors.json`](../assets/eip-9999/vectors/vectors.json) and regenerated by `tools/vectors.js`. They cover: `subjectType` hashes; `subjectKey` for an `erc8004` subject; `schemeId` (with chain and scheme registry), `admissionDomain`, `assertionId`, `rulesHash` and `policyId` derivations; a controller binding witness; the canonical `kya-public-v1` public-input encoding, its `evidenceHash`, and its fifteen-signal Groth16 split (layout, then `schemeId`, then `admissionDomain`); the bridge `configHash`, `requestHash`, `responseHash`, `tag` and metadata value; EIP-712 digests for `KYAChallenge`, an assertion-based `KYAPresentation` and an ephemeral ZK `KYAPresentation`, with a signature from a well-known test key; and the four ERC-165 interface ids.
+Deterministic vectors are provided in [`vectors.json`](../assets/eip-8419/vectors/vectors.json) and regenerated by `tools/vectors.js`. They cover: `subjectType` hashes; `subjectKey` for an `erc8004` subject; `schemeId` (with chain and scheme registry), `admissionDomain`, `assertionId`, `rulesHash` and `policyId` derivations; a controller binding witness; the canonical `kya-public-v1` public-input encoding, its `evidenceHash`, and its fifteen-signal Groth16 split (layout, then `schemeId`, then `admissionDomain`); the bridge `configHash`, `requestHash`, `responseHash`, `tag` and metadata value; EIP-712 digests for `KYAChallenge`, an assertion-based `KYAPresentation` and an ephemeral ZK `KYAPresentation`, with a signature from a well-known test key; and the four ERC-165 interface ids.
 
 An executable end-to-end suite (`test/kya.test.js`) exercises the reference implementation on an in-process EVM: scheme lifecycle, semantic immutability and access control; attested recording, supersession, revocation and expiry; resolution ordering and the non-empty-issuers rule; proved admission with subject-mismatch, replay and mode-mismatch rejections; the Groth16 adapter including `issuerSetRoot` pinning and the epoch window under time travel; on-chain policy evaluation; and the full ERC-8004 bridge flow from `validationRequest` through `sync`, revocation, re-sync and the unmapped-level rejection. Six regression cases cover the identity invariants of revision 3: a strict policy document and a weaker executable projection cannot share a `policyId`; a controller-bound assertion stops satisfying complete `check`/`evaluate` after an ERC-721 transfer while remaining visible to `resolveLocal`; changing a bridge's issuers or response map changes `configHash`, leaves `requestHash` stable, shows the previous configuration's result until the next `sync`, then updates the same ERC-8004 record so that `getSummary` filtered to that bridge reads one record with the current response (the reviewer's 100 → 0 case reads 0, not 50), while a superseded bridge's record is excluded by that filter and included only when the client asks for both; a changed verifier code hash is refused at admission; distinct `schemeId`s sharing a 32-bit prefix produce distinct tags; and, for admission domains, a scheme registered with identical inputs on a second Scheme Registry has a different `schemeId`, while one Scheme Registry with two KYA Registries A and B yields one `schemeId` and two domains — a proof made for A is refused by B both before and after A consumes it, the same credential re-proved for B is admitted with a B-scoped nullifier, and there is no parameter through which a submitter can supply a domain. A companion suite with a real Groth16 circuit adds adversarial cases: prover-chosen future or stale epochs, cross-scheme replay of a credential, tampered public inputs, aliased field-element encodings, an attestor outside the pinned issuer set, and the two-registry admission-domain cases end to end, including a verifier that accepts a proof under B's domain and rejects the same proof under A's.
 
@@ -499,12 +499,12 @@ An executable end-to-end suite (`test/kya.test.js`) exercises the reference impl
 
 A reference implementation is provided under the assets of this proposal:
 
-- Interfaces: [`IKYATypes.sol`](../assets/eip-9999/contracts/interfaces/IKYATypes.sol), [`IKYASchemeRegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYASchemeRegistry.sol), [`IKYARegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYARegistry.sol), [`IKYAPolicyRegistry.sol`](../assets/eip-9999/contracts/interfaces/IKYAPolicyRegistry.sol), [`IKYAVerifier.sol`](../assets/eip-9999/contracts/interfaces/IKYAVerifier.sol), and a minimal [`IERC8004Validation.sol`](../assets/eip-9999/contracts/interfaces/IERC8004Validation.sol).
-- Registries: [`KYASchemeRegistry.sol`](../assets/eip-9999/contracts/KYASchemeRegistry.sol), [`KYARegistry.sol`](../assets/eip-9999/contracts/KYARegistry.sol), [`KYAPolicyRegistry.sol`](../assets/eip-9999/contracts/KYAPolicyRegistry.sol) — permissionless.
-- Bridge: [`KYABridge8004.sol`](../assets/eip-9999/contracts/KYABridge8004.sol) — curated ERC-8004 validator mirroring KYA outcomes.
-- Verifier adapter: [`Groth16KYAVerifierAdapter.sol`](../assets/eip-9999/contracts/verifiers/Groth16KYAVerifierAdapter.sol) — adapts a snarkjs-style Groth16 verifier to `IKYAVerifier` using the `kya-public-v1` layout.
+- Interfaces: [`IKYATypes.sol`](../assets/eip-8419/contracts/interfaces/IKYATypes.sol), [`IKYASchemeRegistry.sol`](../assets/eip-8419/contracts/interfaces/IKYASchemeRegistry.sol), [`IKYARegistry.sol`](../assets/eip-8419/contracts/interfaces/IKYARegistry.sol), [`IKYAPolicyRegistry.sol`](../assets/eip-8419/contracts/interfaces/IKYAPolicyRegistry.sol), [`IKYAVerifier.sol`](../assets/eip-8419/contracts/interfaces/IKYAVerifier.sol), and a minimal [`IERC8004Validation.sol`](../assets/eip-8419/contracts/interfaces/IERC8004Validation.sol).
+- Registries: [`KYASchemeRegistry.sol`](../assets/eip-8419/contracts/KYASchemeRegistry.sol), [`KYARegistry.sol`](../assets/eip-8419/contracts/KYARegistry.sol), [`KYAPolicyRegistry.sol`](../assets/eip-8419/contracts/KYAPolicyRegistry.sol) — permissionless.
+- Bridge: [`KYABridge8004.sol`](../assets/eip-8419/contracts/KYABridge8004.sol) — curated ERC-8004 validator mirroring KYA outcomes.
+- Verifier adapter: [`Groth16KYAVerifierAdapter.sol`](../assets/eip-8419/contracts/verifiers/Groth16KYAVerifierAdapter.sol) — adapts a snarkjs-style Groth16 verifier to `IKYAVerifier` using the `kya-public-v1` layout.
 
-Schemas for the scheme, policy and discovery documents: [`kya-scheme.schema.json`](../assets/eip-9999/schemas/kya-scheme.schema.json), [`kya-policy.schema.json`](../assets/eip-9999/schemas/kya-policy.schema.json), [`kya-discovery.schema.json`](../assets/eip-9999/schemas/kya-discovery.schema.json).
+Schemas for the scheme, policy and discovery documents: [`kya-scheme.schema.json`](../assets/eip-8419/schemas/kya-scheme.schema.json), [`kya-policy.schema.json`](../assets/eip-8419/schemas/kya-policy.schema.json), [`kya-discovery.schema.json`](../assets/eip-8419/schemas/kya-discovery.schema.json).
 
 ## Security Considerations
 

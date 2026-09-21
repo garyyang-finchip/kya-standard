@@ -2,7 +2,7 @@
 
 A scheme-agnostic registry and handshake standard for recording, resolving and presenting **trust assertions about AI agents**, with a **zero-knowledge (ZK-KYA) profile** and a normative **ERC-8004 binding**.
 
-> Status: Draft · placeholder number `9999` until an EIP editor assigns one · discussion thread: https://ethereum-magicians.org/t/draft-erc-know-your-agent-kya-framework-trust-assertions-for-agents-zk-kya-profile-erc-8004-binding/29735
+> Status: Draft · **ERC-8419** (number assigned 2026-09-20 in ethereum/ERCs PR #2012) · discussion thread: https://ethereum-magicians.org/t/erc-8419-know-your-agent-kya-framework/29735
 
 ## What it is — in one paragraph
 
@@ -20,7 +20,7 @@ L0  Subject         erc8004 (MUST) · account · erc721 · did
 ## Repository layout
 
 ```
-ERCS/erc-kya.md                     the ERC text (EIP-1 format, placeholder 9999)
+ERCS/erc-kya.md                     the ERC text (EIP-1 format, ERC-8419)
 assets/erc-kya/
   contracts/
     interfaces/                     IKYATypes, IKYASchemeRegistry, IKYARegistry, IKYAPolicyRegistry, IKYAVerifier, IERC8004Validation
@@ -78,7 +78,7 @@ Deployed 2026-09-20 (chainId 11155111) after the second round of external review
 | Groth16Verifier (circuit rev 3, 15 signals) | [`0x64c18C506e8a202d98822F97911dF774e9b85f85`](https://sepolia.etherscan.io/address/0x64c18C506e8a202d98822F97911dF774e9b85f85) | 11744756 |
 | Groth16KYAVerifierAdapter (epoch 30 d, grace 1, pinned root) | [`0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7`](https://sepolia.etherscan.io/address/0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7) | 11744757 |
 
-Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387**. Schemes (rule identities: chainId + scheme registry, no registry of use): attested `0x1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd` (binding `controller`, ordered-level), proved (ZK) `0xe8b5ebea4a171970b3d596228e53b95736e44032fcf766b5505e742379031a14`. Worked examples: [setMetadata "kya"](https://sepolia.etherscan.io/tx/0x1ea72463cebc89ed03f3f00b88becb74fa51ff4d0aa870a0ecd5c71684b010f6) · [attest](https://sepolia.etherscan.io/tx/0x1b22ffafe965564ec3e8fe7996f8a9fc031440ca026326a2892622d4adf27029) (controller witness recorded) · [attestWithProof (Groth16 rev 3, epoch 690, nullifier scoped to this registry's admission domain, anchor = issuer-set root)](https://sepolia.etherscan.io/tx/0x0fe2b0c21d98e170405a3d9d9b6621441260e5b45fde7eb31a2b2fbff36da324) · [policy (policyId commits rulesHash)](https://sepolia.etherscan.io/tx/0x06276a41a5c6c2e49561b2bd4368e3179d83c513e2de0fc93ee55ffca44e42cb) · bridge [configure (configHash)](https://sepolia.etherscan.io/tx/0xc53af4d4adc3ea167dafce121b15402bac54163cb64dc5a03a90a70605465569) → [request (stable requestHash)](https://sepolia.etherscan.io/tx/0x7c1bee4c7dd485bded377a8eeb97d21b99c289a4998b2ed05661d5b7aa6d7e28) → [sync](https://sepolia.etherscan.io/tx/0xbf0943984aa50aaca3e5c32ffaddd8e92f470024582a52747eb81ae4f7b11702) (60/100 under the full-schemeId tag, `responseHash = H(assertionId, level, configHash)`, `getSummary(agent, [bridge], tag)` count 1). Read back on-chain: the adapter accepts the recorded proof under this registry's domain and rejects the identical proof under another registry's domain.
+Demo agent on the official ERC-8004 IdentityRegistry: **agentId 10387**. Schemes (rule identities: chainId + scheme registry, no registry of use): attested `0x1b9a269407206381fc794c8fb9f089f26e793a43033bf7df5984b0b7408bffbd` (binding `controller`, ordered-level), proved (ZK) `0xe8b5ebea4a171970b3d596228e53b95736e44032fcf766b5505e742379031a14`. Worked examples: [setMetadata "kya"](https://sepolia.etherscan.io/tx/0x1ea72463cebc89ed03f3f00b88becb74fa51ff4d0aa870a0ecd5c71684b010f6) · [attest](https://sepolia.etherscan.io/tx/0x1b22ffafe965564ec3e8fe7996f8a9fc031440ca026326a2892622d4adf27029) (controller witness recorded) · [attestWithProof (Groth16 rev 3, epoch 690, nullifier scoped to this registry's admission domain, anchor = issuer-set root)](https://sepolia.etherscan.io/tx/0x0fe2b0c21d98e170405a3d9d9b6621441260e5b45fde7eb31a2b2fbff36da324) · [policy (policyId commits rulesHash)](https://sepolia.etherscan.io/tx/0x06276a41a5c6c2e49561b2bd4368e3179d83c513e2de0fc93ee55ffca44e42cb) · bridge [configure (configHash)](https://sepolia.etherscan.io/tx/0xc53af4d4adc3ea167dafce121b15402bac54163cb64dc5a03a90a70605465569) → [request (stable requestHash)](https://sepolia.etherscan.io/tx/0x7c1bee4c7dd485bded377a8eeb97d21b99c289a4998b2ed05661d5b7aa6d7e28) → [sync](https://sepolia.etherscan.io/tx/0xbf0943984aa50aaca3e5c32ffaddd8e92f470024582a52747eb81ae4f7b11702) (60/100 under the full-schemeId tag, `responseHash = H(assertionId, level, configHash)`, `getSummary(agent, [bridge], tag)` count 1). Read back on-chain: the adapter accepts the recorded proof under this registry's domain and rejects the identical proof under another registry's domain. Note: the demo descriptors were registered on 2026-09-20, before the number was assigned, so their `type` URIs still read `eip-9999`; the hashes committed on-chain are over those bytes and are left as they are.
 
 Ownership: bridge owner and both scheme controllers are still the deployer key until the maintainer supplies an address; the transfer transactions will be recorded in `deployments/ownership.json`.
 
@@ -110,7 +110,7 @@ Ownership: bridge owner and both scheme controllers are still the deployer key u
 
 ## Filing as an ethereum/ERCs PR
 
-`tools/prepare-pr.sh <path-to-ERCs-fork> <number>` copies `ERCS/erc-kya.md` to `ERCS/erc-<number>.md`, `assets/erc-kya/` to `assets/erc-<number>/`, and rewrites the `9999` placeholders. Work on a fresh branch (`add-erc-kya`) cut from the latest `upstream/master`; never commit to `master`.
+`tools/prepare-pr.sh <path-to-ERCs-fork> <number>` copies `ERCS/erc-kya.md` to `ERCS/erc-<number>.md`, `assets/erc-kya/` to `assets/erc-<number>/`, (the sources already carry the assigned number 8419; the script is kept for renumbering if ever needed). Work on a fresh branch (`add-erc-kya`) cut from the latest `upstream/master`; never commit to `master`.
 
 ## License
 

@@ -1,5 +1,5 @@
 {
-  "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-policy-v1",
+  "type": "https://eips.ethereum.org/EIPS/eip-8419#kya-policy-v1",
   "name": "Counterparty baseline for payments above 1,000 USDC",
   "kyaRegistry": "eip155:11155111:0x4444444444444444444444444444444444444444",
   "require": {

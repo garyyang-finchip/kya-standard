@@ -1,5 +1,5 @@
 {
-  "type": "https://eips.ethereum.org/EIPS/eip-9999#kya-scheme-v1",
+  "type": "https://eips.ethereum.org/EIPS/eip-8419#kya-scheme-v1",
   "name": "Accountable Operator (ZK) v1",
   "description": "Proves, without disclosure, that an identified legal entity in an allow-listed jurisdiction set stands behind the agent's ERC-8004 registration and controls its agentWallet.",
   "version": "1.0.0",
