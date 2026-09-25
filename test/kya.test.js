@@ -343,7 +343,7 @@ async function test(name, fn) {
     await expectRevert(policies.send("registerPolicyWithRules", ["ipfs://p", doc, []], "agentOwner"), "KYA_NoOnchainRules");
   });
 
-  await test("R2 controller transfer: complete check/evaluate fail after transfer; registry-local resolve still sees the assertion", async () => {
+  await test("R2 controller transfer: complete check/evaluate fail after transfer; registry-local resolve still sees the assertion; a round trip revives a still-latest assertion and not a superseded one", async () => {
     // fresh agent owned by agentOwner, controller-bound level-3 assertion, policy over it
     const { result: id2 } = await identity.send("register", ["ipfs://agent2.json"], "agentOwner");
     const s2 = subject8004(chainId, identity.addr, id2);
@@ -367,6 +367,28 @@ async function test(name, fn) {
     const { result: aid2 } = await kya.send("attest", [s2, attestedScheme, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
     assert.equal((await kya.call("getAssertion", [aid2])).bindingWitness, ethers.keccak256(coder.encode(["address"], [A("stranger")])));
     assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), true);
+    // R2b (round trip, reviewer SergeevDmitry): the predicate compares controllers, not custody history.
+    //   Case 1 — issuerB attested to Alice; the agent goes Alice → Bob → Alice; issuerB never re-attested.
+    //   The original assertion is still issuerB's latest, so it satisfies again with no fresh assessment.
+    const { result: aidB } = await kya.send("attest", [s2, attestedScheme, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerB"); // agent currently at Bob ("stranger")
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerB")]]), true);
+    await identity.send("transferFrom", [A("stranger"), id2, A("agentOwner")], "stranger");   // Bob → Alice
+    assert.equal(Number(await kya.call("bindingStatus", [aidB])), 2);                           // VIOLATED while at Alice
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerB")]]), false);
+    await identity.send("transferFrom", [A("agentOwner"), id2, A("stranger")], "agentOwner");  // Alice → Bob: round trip complete
+    assert.equal(Number(await kya.call("bindingStatus", [aidB])), 1);                           // SATISFIED again
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerB")]]), true);       // revived, documented semantics
+    //   Case 2 — issuerA DID re-attest to Bob (aid2 above); the original Alice-bound aid is no longer issuerA's latest.
+    //   Agent now at Bob: aid2 satisfies. Send it back to Alice: aid's predicate is SATISFIED again but resolution
+    //   only considers the latest (aid2, VIOLATED), so nothing is revived.
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), true);       // aid2 (Bob) at Bob
+    await identity.send("transferFrom", [A("stranger"), id2, A("agentOwner")], "stranger");   // Bob → Alice
+    assert.equal(Number(await kya.call("bindingStatus", [aid])), 1);                            // original predicate holds ...
+    assert.equal(Number(await kya.call("bindingStatus", [aid2])), 2);                           // ... latest is VIOLATED ...
+    assert.equal(Number((await kya.call("getAssertion", [aid])).status), 2);                    // ... and the original is SUPERSEDED
+    assert.equal(await kya.call("check", [s2, attestedScheme, 3, [A("issuerA")]]), false);      // so the round trip revives nothing
+    assert.equal((await kya.call("resolve", [s2, attestedScheme, [A("issuerA")]])).assertionId, ethers.ZeroHash);
+    await identity.send("transferFrom", [A("agentOwner"), id2, A("stranger")], "agentOwner");  // back to Bob for the rest of the test
     // identity-bound schemes are unaffected by transfer
     const { result: idScheme } = await schemes.send("registerScheme", ["ipfs://id-bound", ethers.id("idb"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
     const { result: aid3 } = await kya.send("attest", [s2, idScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
