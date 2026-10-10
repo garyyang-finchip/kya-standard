@@ -43,13 +43,16 @@ const idAbi = new ethers.Interface(require("../abis/ERC8004IdentityRegistry.json
   const attestedScheme = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [net.chainId, A.KYASchemeRegistry, deployer, aHash, 0]));
   const provedScheme = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [net.chainId, A.KYASchemeRegistry, deployer, pHash, 1]));
 
+  // SchemeInput: resultKind 0 = ordered-level; levelMask = bits of the descriptor's declared levels
+  const maskOf = (desc) => Object.keys(desc.levels).reduce((m, l) => m | (1n << BigInt(l)), 0n);
+  const SI = (uri, hash, mode, binding, verifier, predecessor, desc) => ({ schemeURI: uri, schemeHash: hash, mode, binding, resultKind: 0, levelMask: maskOf(desc), verifier, predecessor });
   const plan = [];
   const add = (label, to, data, extra = {}) => plan.push({ label, nonce: nonce++, to, data, ...extra });
   const S = I("KYASchemeRegistry"), K = I("KYARegistry"), P = I("KYAPolicyRegistry"), B = I("KYABridge8004"), V = I("ValidationRegistry8004");
 
   // round A
-  add("registerScheme(attested)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(attestedDesc), aHash, 0, 1, ethers.ZeroAddress, ethers.ZeroHash]), { round: "A" });
-  add("registerScheme(proved)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [dataUri(provedDesc), pHash, 1, 1, A.Groth16KYAVerifierAdapter, ethers.ZeroHash]), { round: "A" });
+  add("registerScheme(attested)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [SI(dataUri(attestedDesc), aHash, 0, 1, ethers.ZeroAddress, ethers.ZeroHash, attestedDesc)]), { round: "A" });
+  add("registerScheme(proved)", A.KYASchemeRegistry, S.encodeFunctionData("registerScheme", [SI(dataUri(provedDesc), pHash, 1, 1, A.Groth16KYAVerifierAdapter, ethers.ZeroHash, provedDesc)]), { round: "A" });
   add("setMetadata(agentId,\"kya\")", net.identityRegistry, idAbi.encodeFunctionData("setMetadata", [agentId, "kya", coder.encode(["address", "bytes32[]"], [A.KYARegistry, [attestedScheme, provedScheme]])]), { round: "A" });
 
   // round B

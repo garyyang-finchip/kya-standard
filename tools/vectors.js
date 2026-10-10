@@ -31,6 +31,11 @@ const subjectKey = ethers.keccak256(coder.encode(["bytes32", "bytes"], [SUBJECT_
 const schemeDescriptor = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../assets/erc-kya/vectors/example-scheme.json"), "utf8"));
 const schemeBytes = fs.readFileSync(path.resolve(__dirname, "../assets/erc-kya/vectors/example-scheme.json"));
 const schemeHash = ethers.keccak256(schemeBytes);
+// result domain committed on-chain: resultKind (0 = ordered-level) and levelMask derived from the descriptor's level keys
+const RESULT_KINDS = { "ordered-level": 0, categorical: 1, opaque: 2 };
+const resultKind = RESULT_KINDS[schemeDescriptor.result.kind];
+const levelKeys = Object.keys(schemeDescriptor.result.kind === "categorical" ? schemeDescriptor.result.codes : (schemeDescriptor.levels || { "0": {} })).map(Number);
+const levelMask = levelKeys.reduce((m, l) => m | (1n << BigInt(l)), 0n);
 const schemeNonce = 0n;
 const schemeId = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [chainId, schemeRegistry, controller, schemeHash, schemeNonce]));
 // admission domain the KYA Registry at `kyaRegistry` computes for itself (Section 5)
@@ -121,7 +126,7 @@ const vectors = {
   _comment: "Deterministic vectors for ERC-KYA (ERC-8419). Regenerate with `node tools/vectors.js`.",
   subjectTypes: SUBJECT_TYPES,
   subject: { chainId: chainId.toString(), identityRegistry, agentId: agentId.toString(), subjectType: SUBJECT_TYPES.erc8004, subjectData, subjectKey },
-  scheme: { chainId: chainId.toString(), schemeRegistry, controller, schemeHash, nonce: schemeNonce.toString(), schemeId, schemeIdPreimage: "abi.encode(chainId, schemeRegistry, controller, schemeHash, nonce)", descriptorKeccak: "keccak256 of the raw bytes of example-scheme.json", binding: "controller (1)", bindingWitnessExample: { controller: "0x8888888888888888888888888888888888888888", witness: ethers.keccak256(coder.encode(["address"], ["0x8888888888888888888888888888888888888888"])) } },
+  scheme: { chainId: chainId.toString(), schemeRegistry, controller, schemeHash, nonce: schemeNonce.toString(), schemeId, schemeIdPreimage: "abi.encode(chainId, schemeRegistry, controller, schemeHash, nonce)", descriptorKeccak: "keccak256 of the raw bytes of example-scheme.json", binding: "controller (1)", resultKind, levelMask: "0x" + levelMask.toString(16), levelMaskDecimal: levelMask.toString(), declaredLevels: levelKeys, levelMaskRule: "bit n set <=> level n is a declared, valid result; equals the key set of descriptor.levels (ordered-level) or descriptor.result.codes (categorical); opaque is exactly 0x1", bindingWitnessExample: { controller: "0x8888888888888888888888888888888888888888", witness: ethers.keccak256(coder.encode(["address"], ["0x8888888888888888888888888888888888888888"])) } },
   assertion: { issuer, issuerNonce: issuerNonce.toString(), assertionId, provedIssuer: verifier, provedAssertionId },
   admission: { registryAdmissionType: REGISTRY_ADMISSION_TYPE, kyaRegistry, schemeRegistry, admissionDomain, preimage: "abi.encode(keccak256(\"erc-kya-registry-admission-v1\"), chainId, schemeRegistry, kyaRegistry)", note: "computed by the admitting KYA Registry from its own state and passed to IKYAVerifier.verify; proofs and nullifiers are scoped to it" },
   zk: { layout: "kya-public-v1", signalOrder: "[nullifier.hi, nullifier.lo, subjectKey.hi, subjectKey.lo, level, claimDigest.hi, claimDigest.lo, expiresAt, issuerSetRoot.hi, issuerSetRoot.lo, schemeId.hi, schemeId.lo, epoch, admissionDomain.hi, admissionDomain.lo]", proverSecret: proverKey, epoch: epoch.toString(), nullifier, claimDigest, issuerSetRoot, expiresAt: expiresAt.toString(), publicInputs, evidenceHash: ethers.keccak256(publicInputs), groth16Signals },

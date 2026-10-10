@@ -19,6 +19,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
   const dep = loadDeployment("sepolia");
   if (!dep) throw new Error("run scripts/deploy-sepolia.js first");
   const { net, wallet } = getSigner("sepolia");
+  const maskOf = (desc) => Object.keys(desc.levels).reduce((m, l) => m | (1n << BigInt(l)), 0n);
   const C = (n) => attach(n, dep.contracts[n].address, wallet);
   const schemes = C("KYASchemeRegistry"), kya = C("KYARegistry"), policies = C("KYAPolicyRegistry");
   const validation = C("ValidationRegistry8004"), bridge = C("KYABridge8004"), adapter = C("Groth16KYAVerifierAdapter");
@@ -53,7 +54,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
     evidenceKinds: ["domain-proof", "erc8004-validation"], issuerPolicy: { kind: "open" },
   };
   const attestedBytes = Buffer.from(JSON.stringify(attestedDesc));
-  rc = await sendAndWait("registerScheme(attested)", schemes.registerScheme(dataUri(attestedDesc), ethers.keccak256(attestedBytes), 0, 1 /* CONTROLLER */, ethers.ZeroAddress, ethers.ZeroHash));
+  rc = await sendAndWait("registerScheme(attested)", schemes.registerScheme({ schemeURI: dataUri(attestedDesc), schemeHash: ethers.keccak256(attestedBytes), mode: 0, binding: 1 /* CONTROLLER */, resultKind: 0, levelMask: maskOf(attestedDesc), verifier: ethers.ZeroAddress, predecessor: ethers.ZeroHash }));
   const attestedScheme = rc.logs.map((l) => { try { return schemes.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "SchemeRegistered").args.schemeId;
   console.log(`  attested schemeId ${attestedScheme}`);
 
@@ -68,7 +69,7 @@ const ERC8004 = ethers.keccak256(ethers.toUtf8Bytes("erc8004"));
       epochSeconds: dep.adapterConfig.epochSeconds, epochGrace: dep.adapterConfig.epochGrace, issuerHiding: true, issuerSetRoot: dep.adapterConfig.issuerSetRoot,
       credentialBinding: ["subjectKey", "schemeId", "level", "claimDigest", "expiresAt", "proverCommitment"] },
   };
-  rc = await sendAndWait("registerScheme(proved)", schemes.registerScheme(dataUri(provedDesc), ethers.keccak256(Buffer.from(JSON.stringify(provedDesc))), 1, 1 /* CONTROLLER */, dep.contracts.Groth16KYAVerifierAdapter.address, ethers.ZeroHash));
+  rc = await sendAndWait("registerScheme(proved)", schemes.registerScheme({ schemeURI: dataUri(provedDesc), schemeHash: ethers.keccak256(Buffer.from(JSON.stringify(provedDesc))), mode: 1, binding: 1 /* CONTROLLER */, resultKind: 0, levelMask: maskOf(provedDesc), verifier: dep.contracts.Groth16KYAVerifierAdapter.address, predecessor: ethers.ZeroHash }));
   const provedScheme = rc.logs.map((l) => { try { return schemes.interface.parseLog(l); } catch { return null; } }).find((e) => e && e.name === "SchemeRegistered").args.schemeId;
   console.log(`  proved schemeId ${provedScheme}`);
   rec("schemes", { attested: attestedScheme, proved: provedScheme });

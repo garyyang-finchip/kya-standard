@@ -31,6 +31,11 @@ async function test(name, fn) {
   const bridge = await h.deploy("KYABridge8004", [kya.addr, validation.addr, A("deployer")]);
   const ids = await h.deploy("InterfaceIds");
   const secret = ethers.id("mock-secret");
+  // SchemeInput tuple: (schemeURI, schemeHash, mode, binding, resultKind, levelMask, verifier, predecessor).
+  // Test default: ORDERED_LEVEL with levels 0..3 declared (matches the 4-entry bridge responseMap).
+  const MASK07 = 0xfn;
+  const SI = (uri, hash, mode, binding, verifier, predecessor, resultKind = 0, levelMask = MASK07) =>
+    ({ schemeURI: uri, schemeHash: hash, mode, binding, resultKind, levelMask, verifier, predecessor });
   const mockVerifier = await h.deploy("MockKYAVerifier", [secret]);
 
   console.log("\nERC-KYA reference implementation\n");
@@ -53,7 +58,7 @@ async function test(name, fn) {
   let attestedScheme, provedScheme;
   await test("registerScheme derives schemeId = keccak(chainId, schemeRegistry, controller, schemeHash, nonce) — a rule identity, no registry of use; binding stored", async () => {
     const hash = ethers.id("descriptor-v1");
-    const { result, logs } = await schemes.send("registerScheme", ["ipfs://scheme-a", hash, 0, 1 /* CONTROLLER */, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
+    const { result, logs } = await schemes.send("registerScheme", [SI("ipfs://scheme-a", hash, 0, 1 /* CONTROLLER */, ethers.ZeroAddress, ethers.ZeroHash)], "issuerA");
     attestedScheme = result;
     const expected = ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [1n, schemes.addr, A("issuerA"), hash, 0]));
     assert.equal(attestedScheme, expected);
@@ -65,12 +70,12 @@ async function test(name, fn) {
   });
 
   await test("PROVED scheme requires a contract verifier (codehash pinned); invalid mode/binding and zero schemeHash rejected", async () => {
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 1, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_VerifierRequired");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 1, 0, A("stranger"), ethers.ZeroHash]), "KYA_VerifierNotContract");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 2, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_InvalidMode");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.id("h"), 0, 3, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_InvalidBinding");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://x", ethers.ZeroHash, 0, 0, ethers.ZeroAddress, ethers.ZeroHash]), "KYA_SchemeHashRequired");
-    const { result } = await schemes.send("registerScheme", ["ipfs://scheme-zk", ethers.id("zk-v1"), 1, 0 /* IDENTITY */, mockVerifier.addr, ethers.ZeroHash], "issuerA");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("h"), 1, 0, ethers.ZeroAddress, ethers.ZeroHash)]), "KYA_VerifierRequired");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("h"), 1, 0, A("stranger"), ethers.ZeroHash)]), "KYA_VerifierNotContract");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("h"), 2, 0, ethers.ZeroAddress, ethers.ZeroHash)]), "KYA_InvalidMode");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("h"), 0, 3, ethers.ZeroAddress, ethers.ZeroHash)]), "KYA_InvalidBinding");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.ZeroHash, 0, 0, ethers.ZeroAddress, ethers.ZeroHash)]), "KYA_SchemeHashRequired");
+    const { result } = await schemes.send("registerScheme", [SI("ipfs://scheme-zk", ethers.id("zk-v1"), 1, 0 /* IDENTITY */, mockVerifier.addr, ethers.ZeroHash, 0, 0x1fn /* levels 0..4 */)], "issuerA");
     provedScheme = result;
     const s = await schemes.call("getScheme", [provedScheme]);
     assert.equal(s.verifier, mockVerifier.addr);
@@ -90,8 +95,8 @@ async function test(name, fn) {
     assert.equal(Number(after.mode), Number(before.mode));
     await schemes.send("freezeScheme", [attestedScheme], "issuerA");
     await expectRevert(schemes.send("setSchemeURI", [attestedScheme, "ipfs://z"], "issuerA"), "KYA_Frozen");
-    await expectRevert(schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme], "issuerB"), "KYA_BadPredecessor");
-    const { result: v2 } = await schemes.send("registerScheme", ["ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme], "issuerA");
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme)], "issuerB"), "KYA_BadPredecessor");
+    const { result: v2 } = await schemes.send("registerScheme", [SI("ipfs://v2", ethers.id("d3"), 0, 1, ethers.ZeroAddress, attestedScheme)], "issuerA");
     assert.equal((await schemes.call("getScheme", [v2])).predecessor, attestedScheme);
   });
 
@@ -142,7 +147,9 @@ async function test(name, fn) {
     assert.equal(await kya.call("check", [subj(), attestedScheme, 2, [A("issuerA")]]), true);
     assert.equal(await kya.call("check", [subj(), attestedScheme, 3, [A("issuerA")]]), false);
     // unknown subject → no assertion → false even for minLevel 0
-    assert.equal(await kya.call("check", [subject8004(chainId, identity.addr, 999n), attestedScheme, 0, [A("issuerA")]]), false);
+    // minLevel == 0 is not a threshold: check refuses it; existence is resolve's question
+    await expectRevert(kya.send("check", [subject8004(chainId, identity.addr, 999n), attestedScheme, 0, [A("issuerA")]]), "KYA_ZeroThreshold");
+    assert.equal((await kya.call("resolve", [subject8004(chainId, identity.addr, 999n), attestedScheme, [A("issuerA")]])).assertionId, ethers.ZeroHash);
   });
 
   await test("re-attesting supersedes the issuer's previous assertion", async () => {
@@ -226,7 +233,7 @@ async function test(name, fn) {
     await expectRevert(adapter.send("verify", [ethers.ZeroHash, ethers.ZeroHash, enc(ethers.id("g1"), 0, ethers.id("other")), okProof]), "IssuerSetRootMismatch");
     await expectRevert(adapter.send("verify", [ethers.ZeroHash, ethers.ZeroHash, enc(ethers.id("g1"), 5), okProof]), "EpochOutOfWindow");
     // plug the adapter into a real PROVED scheme and record
-    const { result: g16Scheme } = await schemes.send("registerScheme", ["ipfs://g16", ethers.id("g16"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerB");
+    const { result: g16Scheme } = await schemes.send("registerScheme", [SI("ipfs://g16", ethers.id("g16"), 1, 0, adapter.addr, ethers.ZeroHash)], "issuerB");
     const { result: id } = await kya.send("attestWithProof", [subj(), g16Scheme, pi, okProof, ""], "relayer");
     const rec = await kya.call("getAssertion", [id]);
     assert.equal(rec.issuer, adapter.addr);
@@ -303,9 +310,10 @@ async function test(name, fn) {
     ({ result: resp } = await bridge.send("sync", [agentId, attestedScheme], "stranger"));
     assert.equal(Number(resp), 0);
 
-    // level outside the response map is never guessed upward: sync reverts
-    await kya.send("attest", [subj(), attestedScheme, 9, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
-    await expectRevert(bridge.send("sync", [agentId, attestedScheme], "stranger"), "LevelNotMapped");
+    // rev5: an undeclared level never enters the registry, and a response map that does not cover every declared
+    // level is refused at configuration — so a declared result can never reach sync unmapped
+    await expectRevert(kya.send("attest", [subj(), attestedScheme, 9, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_LevelNotDeclared");
+    await expectRevert(bridge.send("configureScheme", [attestedScheme, [A("issuerA")], [0, 25, 60]]), "ResponseMapIncomplete");
     // restore a mapped level for later tests
     await kya.send("attest", [subj(), attestedScheme, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
     ({ result: resp } = await bridge.send("sync", [agentId, attestedScheme], "stranger"));
@@ -390,7 +398,7 @@ async function test(name, fn) {
     assert.equal((await kya.call("resolve", [s2, attestedScheme, [A("issuerA")]])).assertionId, ethers.ZeroHash);
     await identity.send("transferFrom", [A("agentOwner"), id2, A("stranger")], "agentOwner");  // back to Bob for the rest of the test
     // identity-bound schemes are unaffected by transfer
-    const { result: idScheme } = await schemes.send("registerScheme", ["ipfs://id-bound", ethers.id("idb"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash], "issuerA");
+    const { result: idScheme } = await schemes.send("registerScheme", [SI("ipfs://id-bound", ethers.id("idb"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash)], "issuerA");
     const { result: aid3 } = await kya.send("attest", [s2, idScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
     await identity.send("transferFrom", [A("stranger"), id2, A("relayer")], "stranger");
     assert.equal(Number(await kya.call("bindingStatus", [aid3])), 0); // NOT_APPLICABLE
@@ -467,7 +475,7 @@ async function test(name, fn) {
     //     appearing at the registered address (redeploy/metamorphic): simulate by comparing codehashes.
     const good = mockVerifier;
     const proxy = await h.deploy("MockVerifierProxy", [good.addr]);
-    const { result: sch } = await schemes.send("registerScheme", ["ipfs://proxy", ethers.id("px"), 1, 0, proxy.addr, ethers.ZeroHash], "issuerA");
+    const { result: sch } = await schemes.send("registerScheme", [SI("ipfs://proxy", ethers.id("px"), 1, 0, proxy.addr, ethers.ZeroHash)], "issuerA");
     const rec = await schemes.call("getScheme", [sch]);
     // the pinned codehash is the proxy's, and it is stable across setImpl — documenting the limit
     const lenient = await h.deploy("MockKYAVerifier", [ethers.id("other-secret")]);
@@ -476,7 +484,7 @@ async function test(name, fn) {
     // (b) what the registry CAN enforce: if the code at the address differs from the pinned hash, admission reverts.
     //     Emulate by registering a scheme whose recorded codehash cannot match at call time: deploy a scheme via
     //     a verifier, then overwrite the account code in the VM to a different contract.
-    const { result: sch2 } = await schemes.send("registerScheme", ["ipfs://pin", ethers.id("pin"), 1, 0, good.addr, ethers.ZeroHash], "issuerA");
+    const { result: sch2 } = await schemes.send("registerScheme", [SI("ipfs://pin", ethers.id("pin"), 1, 0, good.addr, ethers.ZeroHash)], "issuerA");
     const sk = subjectKey(subj());
     const pi = pubInputs(sk, ethers.id("pin-1"), 2, 0);
     const { result: ok1 } = await kya.send("attestWithProof", [subj(), sch2, pi, proofFor(pi, sch2), ""], "relayer");
@@ -507,9 +515,9 @@ async function test(name, fn) {
     const schemesB = await h.deploy("KYASchemeRegistry");
     const kyaB = await h.deploy("KYARegistry", [schemesB.addr]);
     const hsh = ethers.id("same-descriptor");
-    const { result: idA } = await schemes.send("registerScheme", ["ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash], "issuerB");
+    const { result: idA } = await schemes.send("registerScheme", [SI("ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash)], "issuerB");
     const nonceB = await schemesB.call("schemeNonce", [A("issuerB")]);
-    const { result: idB } = await schemesB.send("registerScheme", ["ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash], "issuerB");
+    const { result: idB } = await schemesB.send("registerScheme", [SI("ipfs://d", hsh, 1, 0, mockVerifier.addr, ethers.ZeroHash)], "issuerB");
     assert.notEqual(idA, idB);
     assert.equal(idB, ethers.keccak256(coder.encode(["uint256", "address", "address", "bytes32", "uint256"], [chainId, schemesB.addr, A("issuerB"), hsh, nonceB])));
     await expectRevert(kyaB.send("attestWithProof", [subj(), idA, "0x", "0x", ""], "relayer"), "KYA_SchemeNotFound");
@@ -544,6 +552,53 @@ async function test(name, fn) {
     // ATTESTED writes need no domain: the issuer transacts with the registry it means (msg.sender is the binding)
     const { result: att2 } = await kyaA2.send("attest", [subj(), attestedScheme, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
     assert.ok(att2);
+  });
+
+  await test("R7 result domain (reviewer Revinand): levels are the complete valid result domain, committed on-chain; undeclared levels are refused at admission; level 0 never passes a threshold; non-ordered schemes cannot be compared", async () => {
+    const sk = subjectKey(subj());
+    // (a) scheme declaring {0, 2, 4} only — mask 0b10101
+    const { result: s024 } = await schemes.send("registerScheme", [SI("ipfs://s024", ethers.id("s024"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 0, 0b10101n)], "issuerA");
+    const dom = await kya.call("resultDomain", [s024]);
+    assert.equal(Number(dom[0]), 0); assert.equal(dom[1], 0b10101n);
+    // the reviewer's case: a trusted issuer records level 255 → refused, it never reaches check
+    await expectRevert(kya.send("attest", [subj(), s024, 255, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_LevelNotDeclared");
+    await expectRevert(kya.send("attest", [subj(), s024, 3, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_LevelNotDeclared");
+    await kya.send("attest", [subj(), s024, 4, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    assert.equal(await kya.call("check", [subj(), s024, 4, [A("issuerA")]]), true);
+    assert.equal(await kya.call("check", [subj(), s024, 3, [A("issuerA")]]), true);   // 4 >= 3: threshold need not be a declared level
+    // the same rule on the PROVED path: a verifier that returns an undeclared level is refused by the registry
+    const { result: p024 } = await schemes.send("registerScheme", [SI("ipfs://p024", ethers.id("p024"), 1, 0, mockVerifier.addr, ethers.ZeroHash, 0, 0b10101n)], "issuerA");
+    const bad = pubInputs(sk, ethers.id("rd-1"), 3, 0);
+    await expectRevert(kya.send("attestWithProof", [subj(), p024, bad, proofFor(bad, p024), ""], "relayer"), "KYA_LevelNotDeclared");
+    const bad255 = pubInputs(sk, ethers.id("rd-1b"), 255, 0);
+    await expectRevert(kya.send("attestWithProof", [subj(), p024, bad255, proofFor(bad255, p024), ""], "relayer"), "KYA_LevelNotDeclared");
+    const good = pubInputs(sk, ethers.id("rd-2"), 2, 0);
+    assert.ok((await kya.send("attestWithProof", [subj(), p024, good, proofFor(good, p024), ""], "relayer")).result);
+    // (b) level 0 "not verified / failed": an otherwise qualifying level-0 assertion exists, but check cannot be asked a zero threshold
+    const { result: s0 } = await schemes.send("registerScheme", [SI("ipfs://s0", ethers.id("s0"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 0, 0b11n)], "issuerA");
+    await kya.send("attest", [subj(), s0, 0, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    assert.notEqual((await kya.call("resolve", [subj(), s0, [A("issuerA")]])).assertionId, ethers.ZeroHash); // it exists ...
+    await expectRevert(kya.send("check", [subj(), s0, 0, [A("issuerA")]]), "KYA_ZeroThreshold");               // ... but is not a pass
+    assert.equal(await kya.call("check", [subj(), s0, 1, [A("issuerA")]]), false);
+    // and the policy projection cannot encode a zero threshold either
+    await expectRevert(policies.send("registerPolicyWithRules", ["ipfs://p0", ethers.id("p0"), [{ schemeId: s0, minLevel: 0, issuers: [A("issuerA")] }]], "issuerA"), "KYA_ZeroThreshold");
+    // (c) result kind is on-chain: categorical / opaque schemes cannot be compared, mirrored or put in a policy
+    const { result: cat } = await schemes.send("registerScheme", [SI("ipfs://cat", ethers.id("cat"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 1 /* CATEGORICAL */, 0b1110n)], "issuerA");
+    await kya.send("attest", [subj(), cat, 2, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA");
+    await expectRevert(kya.send("check", [subj(), cat, 1, [A("issuerA")]]), "KYA_NotOrderedLevel");
+    await expectRevert(kya.send("resolve", [subj(), cat, [A("issuerA")]]), "KYA_NotOrderedLevel");
+    assert.equal(Number((await kya.call("getAssertion", [await kya.call("latestAssertion", [sk, cat, A("issuerA")])])).level), 2); // read, don't rank
+    await expectRevert(policies.send("registerPolicyWithRules", ["ipfs://pc", ethers.id("pc"), [{ schemeId: cat, minLevel: 1, issuers: [A("issuerA")] }]], "issuerA"), "KYA_NotOrderedLevel");
+    await expectRevert(bridge.send("configureScheme", [cat, [A("issuerA")], [0, 50, 100, 100]]), "KYA_NotOrderedLevel");
+    const { result: opq } = await schemes.send("registerScheme", [SI("ipfs://opq", ethers.id("opq"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 2 /* OPAQUE */, 1n)], "issuerA");
+    await expectRevert(kya.send("attest", [subj(), opq, 1, ethers.ZeroHash, 0, "", ethers.ZeroHash], "issuerA"), "KYA_LevelNotDeclared");
+    assert.ok((await kya.send("attest", [subj(), opq, 0, ethers.id("the-result"), 0, "", ethers.ZeroHash], "issuerA")).result);
+    // (d) the domain itself is validated at registration
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("x1"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 0, 0b10n)]), "KYA_InvalidLevelMask");    // ordered without level 0
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("x2"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 0, 0b1n)]), "KYA_InvalidLevelMask");     // ordered with only level 0
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("x3"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 2, 0b11n)]), "KYA_InvalidLevelMask");    // opaque with a non-zero level
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("x4"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 1, 0n)]), "KYA_InvalidLevelMask");       // categorical, empty
+    await expectRevert(schemes.send("registerScheme", [SI("ipfs://x", ethers.id("x5"), 0, 0, ethers.ZeroAddress, ethers.ZeroHash, 3, 1n)]), "KYA_InvalidResultKind");
   });
 
   console.log(`\n${passed} passed${process.exitCode ? " — FAILURES ABOVE" : ""}\n`);

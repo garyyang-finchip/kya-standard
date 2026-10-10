@@ -12,7 +12,7 @@ ERC-8004 gives agents identity and raw trust *signals*. This ERC gives the agent
 L4  Policy          "counterparty must satisfy (scheme, minLevel, issuers) …"
 L3  Handshake       KYAChallenge / KYAPresentation (EIP-712) · /.well-known/kya.json
 L2  KYA Registry    attest() | attestWithProof()  →  resolve() / check()
-L1  Scheme Registry registerScheme(descriptorURI, hash, mode, verifier, predecessor)
+L1  Scheme Registry registerScheme(SchemeInput{uri, hash, mode, binding, resultKind, levelMask, verifier, predecessor})
 L0  Subject         erc8004 (MUST) · account · erc721 · did
         ▲ ERC-8004 identity + signals as input      │ KYABridge8004 → Validation Registry (tag "kya:…")
 ```
@@ -36,7 +36,7 @@ assets/erc-kya/
 tools/compile.js                    solc-js build → build/artifacts.json
 tools/vectors.js                    regenerates vectors.json
 tools/prepare-pr.sh                 lays the files out as an ethereum/ERCs PR
-test/kya.test.js                    in-process EVM end-to-end suite (18 cases + 6 regression cases from review rounds 1–2 (R1–R6), no RPC needed)
+test/kya.test.js                    in-process EVM end-to-end suite (18 cases + 7 regression cases from the review thread (R1–R7), no RPC needed)
 test/zk.test.js                     real Groth16 proof → Verifier.sol → adapter → KYARegistry, incl. adversarial + admission-domain cases (17 cases)
 companions/zk-kya-groth16/          EXPERIMENTAL reference ZK-KYA circuit (circom) + prover tooling + built keys
 scripts/deploy-sepolia.js           deploys the stack to Sepolia against the official ERC-8004 IdentityRegistry
@@ -66,6 +66,8 @@ The deployment binds to the **official ERC-8004 IdentityRegistry on Sepolia** (`
 
 ### Deployed addresses (revision 4, current)
 
+> **Note.** These contracts implement revision 4. The revision-5 result-domain fields (`resultKind`, `levelMask`, `resultDomain()`, the new `registerScheme(SchemeInput)` signature and interface ids) are in the source and the specification but are **not yet on Sepolia**; a revision-5 redeploy will replace this table.
+
 Deployed 2026-09-20 (chainId 11155111) after the second round of external review ("Admission Domain + Continuous Mirror"). Full records with every tx hash: [`deployments/sepolia.json`](deployments/sepolia.json) and [`deployments/sepolia-examples.json`](deployments/sepolia-examples.json). Earlier deployments are kept for the record (`sepolia-r1.json`, `sepolia-r2.json`, `sepolia-r3.json`, the withdrawn `sepolia-r4-draft.json`, and their `-examples` files) and **must not be relied on**; in particular their bridges' records in their own Validation Registries are not part of the current query path.
 
 | contract | address | block |
@@ -89,6 +91,7 @@ Ownership: bridge owner and both scheme controllers are still the deployer key u
 | `subjectKey` | `keccak256(abi.encode(subjectType, subjectData))` |
 | `erc8004` subject | `subjectType = keccak256("erc8004")`, `subjectData = abi.encode(chainId, identityRegistry, agentId)` |
 | `schemeId` | `keccak256(abi.encode(chainId, schemeRegistry, controller, schemeHash, controllerNonce))` — a rule identity; reusable by several KYA Registries |
+| `levelMask` / `resultKind` | immutable per scheme; bit `n` of `levelMask` set ⇔ level `n` is a valid result. `ORDERED_LEVEL`: bit 0 plus at least one higher bit · `CATEGORICAL`: any non-zero mask · `OPAQUE`: exactly bit 0. `attest`/`attestWithProof` revert on an undeclared level; `check`/`resolve`/policy/bridge accept ordered schemes only |
 | `admissionDomain` | `keccak256(abi.encode(keccak256("erc-kya-registry-admission-v1"), chainId, schemeRegistry, kyaRegistry))` — computed by the admitting KYA Registry, passed to `IKYAVerifier.verify`; proofs and nullifiers are scoped to it |
 | `assertionId` | `keccak256(abi.encode(subjectKey, schemeId, issuer, issuerNonce))` |
 | `policyId` | `keccak256(abi.encode(owner, policyHash, rulesHash, ownerNonce))`, `rulesHash = keccak256(abi.encode(Rule[] allOf))` or `0x0` |

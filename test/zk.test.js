@@ -20,6 +20,8 @@ async function test(name, fn) {
   const h = await Harness.create();
   const A = (n) => ethers.getAddress(h.accounts[n].toString());
   const zk = await ZK.create();
+  const SI = (uri, hash, mode, binding, verifier, predecessor, resultKind = 0, levelMask = 0x1fn) =>
+    ({ schemeURI: uri, schemeHash: hash, mode, binding, resultKind, levelMask, verifier, predecessor });
 
   const schemes = await h.deploy("KYASchemeRegistry");
   const kya = await h.deploy("KYARegistry", [schemes.addr]);
@@ -36,9 +38,9 @@ async function test(name, fn) {
   const DOM = await kya.call("admissionDomain");
   assert.equal(DOM, zk.admissionDomain(1n, schemes.addr, kya.addr));
 
-  const { result: schemeId } = await schemes.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0 /* IDENTITY: subject is a foreign-chain agent in this test */, adapter.addr, ethers.ZeroHash], "issuerA");
+  const { result: schemeId } = await schemes.send("registerScheme", [SI("ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0 /* IDENTITY: subject is a foreign-chain agent in this test */, adapter.addr, ethers.ZeroHash)], "issuerA");
   // a second PROVED scheme sharing the SAME verifier and issuer set (cross-scheme replay target)
-  const { result: schemeB } = await schemes.send("registerScheme", ["ipfs://other-zk-scheme", ethers.id("zk-desc-b"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerA");
+  const { result: schemeB } = await schemes.send("registerScheme", [SI("ipfs://other-zk-scheme", ethers.id("zk-desc-b"), 1, 0, adapter.addr, ethers.ZeroHash)], "issuerA");
 
   const subj = subject8004(1n, "0x8004A818BFB912233c491871b3d84c89A494BD9e", 22n);
   const subjectKey = subjectKeyOf(subj);
@@ -238,7 +240,7 @@ async function test(name, fn) {
   await test("scheme-registry domain (kept from rev3): a second SchemeRegistry yields a different schemeId for the same controller/descriptor/verifier, and A's credential is not provable under it", async () => {
     const schemesB = await h.deploy("KYASchemeRegistry");
     const kyaB = await h.deploy("KYARegistry", [schemesB.addr]);
-    const { result: idB } = await schemesB.send("registerScheme", ["ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0, adapter.addr, ethers.ZeroHash], "issuerA");
+    const { result: idB } = await schemesB.send("registerScheme", [SI("ipfs://accountable-operator-zk-v1", ethers.id("zk-desc"), 1, 0, adapter.addr, ethers.ZeroHash)], "issuerA");
     assert.notEqual(idB, schemeId);
     const DOM_B = await kyaB.call("admissionDomain");
     // Bob's credential names registry A's schemeId; registry B feeds ITS schemeId (and its domain) as public signals
