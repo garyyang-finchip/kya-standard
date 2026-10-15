@@ -1,127 +1,142 @@
 {
-  "network": "sepolia",
-  "chainId": "11155111",
-  "revision": 4,
-  "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
-  "deployedAt": "2026-09-20",
-  "note": "Revision 4 (second review round, \"Admission Domain + Continuous Mirror\"): schemeId is the RULE identity (rev3 formula, chainId + scheme registry); every admitted proof is bound to an admissionDomain = H(keccak256(\"erc-kya-registry-admission-v1\"), chainId, schemeRegistry, kyaRegistry) that the KYARegistry computes for itself and passes to IKYAVerifier.verify; circuit rev 3 takes it as a public input (15 signals) and folds it into the nullifier, so a proof made for one registry is not admissible at another while the same credential can be re-proved elsewhere. Bridge: configHash committed in responseHash only; requestHash is the stable continuing mirror of (bridge, agent, scheme). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
-  "erc8004": {
-    "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
-    "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
-    "validationRegistry": "not deployed by ERC-8004 authors yet — companion ValidationRegistry8004 used"
+ "network": "sepolia",
+ "chainId": "11155111",
+ "revision": 5,
+ "deployer": "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42",
+ "deployedAt": "2026-10-11",
+ "note": "Revision 5 (third review round, \"Result Domain\"): a scheme now commits its resultKind (ORDERED_LEVEL / CATEGORICAL / OPAQUE) and a uint256 levelMask (bit n = level n is a declared result) as immutable semantics; attest/attestWithProof refuse undeclared levels, check reverts on minLevel == 0 and on non-ordered schemes, policy rules and bridge configuration are restricted to ordered schemes with a responseMap covering the whole mask. registerScheme takes a SchemeInput struct; IKYASchemeRegistry/IKYARegistry have new interface ids (0xe6dbd933 / 0x5d1bec61). Groth16Verifier and the adapter are unchanged since revision 4 and are reused (creation bytecode verified identical). Nonce 84 was an aborted deploy (gas schedule on Sepolia had increased ~7x since revision 4; the tx ran out of gas and created nothing usable). Deployed from a sandbox-held throwaway key; txs signed offline against browser-built digests and broadcast via public JSON-RPC.",
+ "erc8004": {
+  "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+  "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+  "validationRegistry": "not deployed by ERC-8004 authors yet — companion ValidationRegistry8004 used"
+ },
+ "contracts": {
+  "KYASchemeRegistry": {
+   "address": "0x8Dd5ec713E21a726FB864f6541F9AAA59aEC0cc0",
+   "tx": "0xd79a844404e28472ce3b7b1008cf4e156eddb6d781ef702b12eb2d51ce6b994b",
+   "block": 11886801,
+   "gasUsed": 6739805,
+   "nonce": 85,
+   "args": []
   },
-  "contracts": {
-    "KYASchemeRegistry": {
-      "address": "0x946F20056944640ECf2Af2C05D71ec384AFA4d5D",
-      "tx": "0xacc932d0ae82d8a9cef217c7f0bcbe64e833284a5a1ce295befdfae0cbb8693d",
-      "block": 11744752,
-      "gasUsed": 819879,
-      "nonce": 68,
-      "args": []
-    },
-    "KYARegistry": {
-      "address": "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb",
-      "tx": "0x44aa0ae7842ca0f0d11b83f95c9d253dafe87b92fef6fefade5180d9706c3791",
-      "block": 11744752,
-      "gasUsed": 1899936,
-      "nonce": 69,
-      "args": [
-        "0x946F20056944640ECf2Af2C05D71ec384AFA4d5D"
-      ]
-    },
-    "KYAPolicyRegistry": {
-      "address": "0x4689d5569Af043920A6F939A72589C9350437845",
-      "tx": "0xa5c676fe62510f5a90c8782e5866ddb6312cb5dbdf187fd4076db35c1a16ff9a",
-      "block": 11744752,
-      "gasUsed": 988029,
-      "nonce": 70,
-      "args": [
-        "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb"
-      ]
-    },
-    "ValidationRegistry8004": {
-      "address": "0x032D4aCa0F86707c9d331C11A382E6989CFE8aB9",
-      "tx": "0x14f7e9f71e8dd07094daf5bdbcab116b801cbc4e238c54023f36db6f9d8a7f23",
-      "block": 11744753,
-      "gasUsed": 984956,
-      "nonce": 71,
-      "args": [
-        "0x8004A818BFB912233c491871b3d84c89A494BD9e"
-      ]
-    },
-    "KYABridge8004": {
-      "address": "0x9079bb07698e1045EAc13e531B9AdBe1a7cDB261",
-      "tx": "0xd9c5a14d44d23e1b6976bdde22343817cadb04e56bd6ab2aea226c331f35f414",
-      "block": 11744756,
-      "gasUsed": 1281971,
-      "nonce": 72,
-      "args": [
-        "0xCaeE3d765871096FD1fcC2C9C13CEe2155BaaFdb",
-        "0x032D4aCa0F86707c9d331C11A382E6989CFE8aB9",
-        "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
-      ]
-    },
-    "Groth16Verifier": {
-      "address": "0x64c18C506e8a202d98822F97911dF774e9b85f85",
-      "tx": "0xecc48af3d4d78cb8cdd1f908189931ae2a6d927d0480adbc67f84afb60c4ddcd",
-      "block": 11744756,
-      "gasUsed": 629152,
-      "nonce": 73,
-      "args": []
-    },
-    "Groth16KYAVerifierAdapter": {
-      "address": "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7",
-      "tx": "0x5660aca3759bfbe3bf629985c041aaeb5a580a5c6e680a51229cb4a7929c1f8a",
-      "block": 11744757,
-      "gasUsed": 695384,
-      "nonce": 74,
-      "args": [
-        "0x64c18C506e8a202d98822F97911dF774e9b85f85",
-        "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
-        "2592000",
-        "1"
-      ]
-    }
+  "KYARegistry": {
+   "address": "0xE06FBA26561E7A385B32514f6657De68723d5cF1",
+   "tx": "0xdcdace6f33817ba87d1560b8884c5da0bb3003f172567d4d4a963f64eb7b901b",
+   "block": 11886819,
+   "gasUsed": 13949803,
+   "nonce": 86,
+   "args": [
+    "0x8Dd5ec713E21a726FB864f6541F9AAA59aEC0cc0"
+   ]
   },
-  "adapterConfig": {
-    "epochSeconds": 2592000,
-    "epochGrace": 1,
-    "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+  "KYAPolicyRegistry": {
+   "address": "0x7767966702bf12C31CDD600807B77443998f0F21",
+   "tx": "0x97c76d0196db9e506db857b0bd2390b9f11656bb0c8edab46c170ae19b13139e",
+   "block": 11886838,
+   "gasUsed": 7532973,
+   "nonce": 87,
+   "args": [
+    "0xE06FBA26561E7A385B32514f6657De68723d5cF1"
+   ]
   },
-  "demoIssuerSet": {
-    "seeds": [
-      "kya-demo-issuer-alice",
-      "kya-demo-issuer-bob",
-      "kya-demo-issuer-carol"
-    ],
-    "root": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
-    "note": "TEST ONLY — attestor keys derive from public seeds"
+  "ValidationRegistry8004": {
+   "address": "0x91103a508b0525B0b16146Ad5C0a7c719148b14c",
+   "tx": "0x323b98b024d96f37e1f277759cfcce065a4a7f44a31e30c8ce81da5b3a047f8c",
+   "block": 11886838,
+   "gasUsed": 6854046,
+   "nonce": 88,
+   "args": [
+    "0x8004A818BFB912233c491871b3d84c89A494BD9e"
+   ]
   },
-  "zk": {
-    "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 3: admissionDomain public input, Poseidon(6) nullifier)",
-    "vkHash": "0x7c0e948ac0d39a9f4cd1b006b4fb3984ff7b1acc24eeb1380767c2996ac3be07",
-    "ceremony": "single-party test ceremony (pot15 reused, fresh phase 2 for circuit rev 3)"
+  "KYABridge8004": {
+   "address": "0xdc39aaE1319EC81AF64F72B36A7F8Aa42520B850",
+   "tx": "0xa3cf8ff293d9daae7344c8295ab6c761bd23527efd3110bbe612e8de628151a2",
+   "block": 11886851,
+   "gasUsed": 9338710,
+   "nonce": 89,
+   "args": [
+    "0xE06FBA26561E7A385B32514f6657De68723d5cF1",
+    "0x91103a508b0525B0b16146Ad5C0a7c719148b14c",
+    "0x65ab82feC38c3A5F2A5b0bd96cB3255E7A45ae42"
+   ]
   },
-  "superseded": [
-    {
-      "revision": "4-draft",
-      "file": "deployments/sepolia-r4-draft.json",
-      "note": "registry-bound schemeId (option B); withdrawn the same day, never published"
-    },
-    {
-      "revision": 3,
-      "file": "deployments/sepolia-r3.json",
-      "note": "proof bound to the scheme registry only, not to the admitting KYA registry; bridge configHash in requestHash"
-    },
-    {
-      "revision": 2,
-      "file": "deployments/sepolia-r2.json",
-      "note": "lacks binding witness/predicate, rulesHash, configHash, code-hash pinning; schemeIds not chain/registry-scoped"
-    },
-    {
-      "revision": 1,
-      "file": "deployments/sepolia-r1.json",
-      "note": "circuit rev 1 — do not rely on"
-    }
-  ]
+  "Groth16Verifier": {
+   "address": "0x64c18C506e8a202d98822F97911dF774e9b85f85",
+   "tx": "0xecc48af3d4d78cb8cdd1f908189931ae2a6d927d0480adbc67f84afb60c4ddcd",
+   "block": 11744756,
+   "gasUsed": 629152,
+   "nonce": 73,
+   "args": [],
+   "reusedFromRevision": 4
+  },
+  "Groth16KYAVerifierAdapter": {
+   "address": "0x7C424db1f07d5BCA5b58Dc4b573f31c32a70bCE7",
+   "tx": "0x5660aca3759bfbe3bf629985c041aaeb5a580a5c6e680a51229cb4a7929c1f8a",
+   "block": 11744757,
+   "gasUsed": 695384,
+   "nonce": 74,
+   "args": [
+    "0x64c18C506e8a202d98822F97911dF774e9b85f85",
+    "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+    "2592000",
+    "1"
+   ],
+   "reusedFromRevision": 4
+  }
+ },
+ "adapterConfig": {
+  "epochSeconds": 2592000,
+  "epochGrace": 1,
+  "issuerSetRoot": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8"
+ },
+ "demoIssuerSet": {
+  "seeds": [
+   "kya-demo-issuer-alice",
+   "kya-demo-issuer-bob",
+   "kya-demo-issuer-carol"
+  ],
+  "root": "0x1de029c3b70d5efa4af25f0d1ffb02831eb7c0d9f5a02f3c781d216e2c54b5e8",
+  "note": "TEST ONLY — attestor keys derive from public seeds"
+ },
+ "zk": {
+  "circuit": "companions/zk-kya-groth16/circuits/kya_public_v1.circom (revision 3: admissionDomain public input, Poseidon(6) nullifier)",
+  "vkHash": "0x7c0e948ac0d39a9f4cd1b006b4fb3984ff7b1acc24eeb1380767c2996ac3be07",
+  "ceremony": "single-party test ceremony (pot15 reused, fresh phase 2 for circuit rev 3)"
+ },
+ "superseded": [
+  {
+   "revision": 4,
+   "file": "deployments/sepolia-r4.json",
+   "note": "result kind and valid-level set not committed on-chain; attest accepted any uint8 level; check(minLevel 0) passed on a level-0 assertion"
+  },
+  {
+   "revision": "4-draft",
+   "file": "deployments/sepolia-r4-draft.json",
+   "note": "registry-bound schemeId (option B); withdrawn the same day, never published"
+  },
+  {
+   "revision": 3,
+   "file": "deployments/sepolia-r3.json",
+   "note": "proof bound to the scheme registry only, not to the admitting KYA registry; bridge configHash in requestHash"
+  },
+  {
+   "revision": 2,
+   "file": "deployments/sepolia-r2.json",
+   "note": "lacks binding witness/predicate, rulesHash, configHash, code-hash pinning; schemeIds not chain/registry-scoped"
+  },
+  {
+   "revision": 1,
+   "file": "deployments/sepolia-r1.json",
+   "note": "circuit rev 1 — do not rely on"
+  }
+ ],
+ "abortedTx": {
+  "nonce": 84,
+  "tx": "0x0d8553d1855b568f6d16559bbb54a108dc452946760f1e9b82110f5193793375",
+  "status": "out of gas (gasLimit 1200000, pre-fork estimate)",
+  "address": "0xb28973b39fac83bd0e77ed40d798dee297dd9e4c",
+  "note": "no code deployed; not part of the stack"
+ },
+ "admissionDomain": "0x779cd7d5bcfb823bf23f307128d1e7cfb9ca2bdf670660315167c74a328d4fc6"
 }
